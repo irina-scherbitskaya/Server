@@ -1,29 +1,26 @@
 import json
 import random
 import sys
-
+import networkx as nx
 LINE_LENGTH_MIN = 1
 LINE_LENGTH_MAX = 7
-POINTS_MIN = 20
-POINTS_MAX = 200
 ARGS = sys.argv
 
+
 def generateGraph(name, idx):
-    length = random.randint(POINTS_MIN, POINTS_MAX)
-    points = [{'idx': i+1, 'post_idx': None} for i in range(length)]
-    lines = []
-    line_idx = 1
-    sparsity = int(length*2/3)
-    for i in range(length):
-        for j in range(i+1, length):
-            if(random.randint(1, sparsity) == 1):
-                two_points = [i+1, j+1]
-                line = {
-                    'idx': line_idx,
-                    'length': random.randint(LINE_LENGTH_MIN, LINE_LENGTH_MAX),
-                    'points': two_points}
-                lines.append(line)
-                line_idx += 1
+    G=nx.connected_watts_strogatz_graph(25, 3, 5)
+    edges= nx.edges(G)
+    lines=[]
+    i=1
+    for edge in edges:
+        line = {
+            'idx': i,
+            'length': random.randint(LINE_LENGTH_MIN, LINE_LENGTH_MAX),
+            'points': edge }
+        lines.append(line)
+        i+=1
+    n = nx.number_of_nodes(G) -1
+    points = [{'idx': i+1, 'post_idx': None} for i in range(n)]
     graph = {
         'name': name,
         'points': points,

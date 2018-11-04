@@ -96,369 +96,209 @@
         {
             "idx": 24,
             "post_idx": null
-        },
-        {
-            "idx": 25,
-            "post_idx": null
-        },
-        {
-            "idx": 26,
-            "post_idx": null
-        },
-        {
-            "idx": 27,
-            "post_idx": null
-        },
-        {
-            "idx": 28,
-            "post_idx": null
-        },
-        {
-            "idx": 29,
-            "post_idx": null
-        },
-        {
-            "idx": 30,
-            "post_idx": null
-        },
-        {
-            "idx": 31,
-            "post_idx": null
-        },
-        {
-            "idx": 32,
-            "post_idx": null
-        },
-        {
-            "idx": 33,
-            "post_idx": null
-        },
-        {
-            "idx": 34,
-            "post_idx": null
-        },
-        {
-            "idx": 35,
-            "post_idx": null
-        },
-        {
-            "idx": 36,
-            "post_idx": null
-        },
-        {
-            "idx": 37,
-            "post_idx": null
-        },
-        {
-            "idx": 38,
-            "post_idx": null
-        },
-        {
-            "idx": 39,
-            "post_idx": null
-        },
-        {
-            "idx": 40,
-            "post_idx": null
-        },
-        {
-            "idx": 41,
-            "post_idx": null
-        },
-        {
-            "idx": 42,
-            "post_idx": null
-        },
-        {
-            "idx": 43,
-            "post_idx": null
-        },
-        {
-            "idx": 44,
-            "post_idx": null
-        },
-        {
-            "idx": 45,
-            "post_idx": null
-        },
-        {
-            "idx": 46,
-            "post_idx": null
-        },
-        {
-            "idx": 47,
-            "post_idx": null
-        },
-        {
-            "idx": 48,
-            "post_idx": null
-        },
-        {
-            "idx": 49,
-            "post_idx": null
-        },
-        {
-            "idx": 50,
-            "post_idx": null
-        },
-        {
-            "idx": 51,
-            "post_idx": null
-        },
-        {
-            "idx": 52,
-            "post_idx": null
         }
     ],
     "lines": [
         {
             "idx": 1,
-            "length": 2,
+            "length": 4,
             "points": [
-                1,
-                34
+                0,
+                4
             ]
         },
         {
             "idx": 2,
-            "length": 4,
+            "length": 5,
             "points": [
-                2,
-                6
+                0,
+                22
             ]
         },
         {
             "idx": 3,
-            "length": 2,
+            "length": 6,
             "points": [
-                2,
-                44
+                1,
+                22
             ]
         },
         {
             "idx": 4,
-            "length": 1,
-            "points": [
-                3,
-                5
-            ]
-        },
-        {
-            "idx": 5,
             "length": 5,
             "points": [
-                3,
-                10
-            ]
-        },
-        {
-            "idx": 6,
-            "length": 5,
-            "points": [
-                3,
-                26
-            ]
-        },
-        {
-            "idx": 7,
-            "length": 3,
-            "points": [
-                3,
-                40
-            ]
-        },
-        {
-            "idx": 8,
-            "length": 4,
-            "points": [
-                4,
-                37
-            ]
-        },
-        {
-            "idx": 9,
-            "length": 4,
-            "points": [
-                9,
-                15
-            ]
-        },
-        {
-            "idx": 10,
-            "length": 3,
-            "points": [
-                9,
-                26
-            ]
-        },
-        {
-            "idx": 11,
-            "length": 3,
-            "points": [
-                9,
-                44
-            ]
-        },
-        {
-            "idx": 12,
-            "length": 7,
-            "points": [
-                11,
-                44
-            ]
-        },
-        {
-            "idx": 13,
-            "length": 4,
-            "points": [
-                12,
+                1,
                 17
             ]
         },
         {
-            "idx": 14,
-            "length": 2,
+            "idx": 5,
+            "length": 4,
             "points": [
-                12,
+                1,
+                18
+            ]
+        },
+        {
+            "idx": 6,
+            "length": 3,
+            "points": [
+                2,
+                22
+            ]
+        },
+        {
+            "idx": 7,
+            "length": 7,
+            "points": [
+                2,
+                7
+            ]
+        },
+        {
+            "idx": 8,
+            "length": 7,
+            "points": [
+                2,
+                13
+            ]
+        },
+        {
+            "idx": 9,
+            "length": 5,
+            "points": [
+                3,
+                22
+            ]
+        },
+        {
+            "idx": 10,
+            "length": 7,
+            "points": [
+                4,
+                12
+            ]
+        },
+        {
+            "idx": 11,
+            "length": 4,
+            "points": [
+                4,
                 21
+            ]
+        },
+        {
+            "idx": 12,
+            "length": 4,
+            "points": [
+                5,
+                11
+            ]
+        },
+        {
+            "idx": 13,
+            "length": 1,
+            "points": [
+                6,
+                16
+            ]
+        },
+        {
+            "idx": 14,
+            "length": 7,
+            "points": [
+                7,
+                11
             ]
         },
         {
             "idx": 15,
             "length": 7,
             "points": [
-                12,
-                42
+                8,
+                13
             ]
         },
         {
             "idx": 16,
-            "length": 4,
+            "length": 2,
             "points": [
-                12,
-                48
+                9,
+                20
             ]
         },
         {
             "idx": 17,
             "length": 4,
             "points": [
-                12,
-                50
+                10,
+                24
             ]
         },
         {
             "idx": 18,
-            "length": 3,
+            "length": 5,
             "points": [
-                13,
-                25
+                12,
+                20
             ]
         },
         {
             "idx": 19,
-            "length": 4,
+            "length": 5,
             "points": [
-                13,
-                42
+                12,
+                16
             ]
         },
         {
             "idx": 20,
-            "length": 3,
+            "length": 1,
             "points": [
-                13,
-                47
+                14,
+                16
             ]
         },
         {
             "idx": 21,
-            "length": 1,
+            "length": 5,
             "points": [
-                14,
-                19
+                15,
+                24
             ]
         },
         {
             "idx": 22,
-            "length": 7,
+            "length": 2,
             "points": [
-                14,
-                35
+                16,
+                24
             ]
         },
         {
             "idx": 23,
-            "length": 2,
+            "length": 1,
             "points": [
-                15,
-                45
+                18,
+                19
             ]
         },
         {
             "idx": 24,
-            "length": 6,
+            "length": 4,
             "points": [
-                17,
-                45
+                19,
+                20
             ]
         },
         {
             "idx": 25,
-            "length": 3,
-            "points": [
-                20,
-                51
-            ]
-        },
-        {
-            "idx": 26,
             "length": 1,
             "points": [
-                26,
-                45
-            ]
-        },
-        {
-            "idx": 27,
-            "length": 6,
-            "points": [
-                26,
-                48
-            ]
-        },
-        {
-            "idx": 28,
-            "length": 6,
-            "points": [
-                27,
-                42
-            ]
-        },
-        {
-            "idx": 29,
-            "length": 2,
-            "points": [
-                31,
-                41
-            ]
-        },
-        {
-            "idx": 30,
-            "length": 7,
-            "points": [
-                33,
-                52
-            ]
-        },
-        {
-            "idx": 31,
-            "length": 4,
-            "points": [
-                38,
-                46
+                22,
+                23
             ]
         }
     ],
-    "idx": 1
+    "idx": "1"
 }
