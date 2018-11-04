@@ -16,7 +16,7 @@ def drawing_graph(file):
     labels = nx.get_edge_attributes(G,'weight')
     pos = nx.kamada_kawai_layout(G, weight = None)
     nx.draw_networkx_edge_labels (G, pos, font_size = 10, edge_labels = labels)
-    nx.draw_networkx(G, pos = pos, node_color = '#DDA0DD', with_labels = True, font_size = 8, node_size= 200)
+    nx.draw_networkx(G, pos = pos, node_color = '#DDA0DD', with_labels = True, font_size = 10, node_size = 400)
 
     fig.savefig('%s.png' % file)
 
