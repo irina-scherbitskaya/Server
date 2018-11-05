@@ -2,6 +2,10 @@
     "name": "first",
     "points": [
         {
+            "idx": 0,
+            "post_idx": null
+        },
+        {
             "idx": 1,
             "post_idx": null
         },
