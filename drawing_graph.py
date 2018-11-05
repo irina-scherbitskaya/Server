@@ -9,7 +9,7 @@ fig.set_size_inches(20, 20)
     
 def drawing_graph(file):
     fig.clear()
-    data = js.load(open('%s.json' % file))
+    data = js.load(open('Graphs/%s.json' % file))
     G = nx.Graph()
     G.add_nodes_from([v['idx'] for v in data['points']])
     G.add_weighted_edges_from([(e['points'][0], e['points'][1], e['length']) for e in data['lines']])
