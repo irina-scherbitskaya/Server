@@ -7,11 +7,11 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-class Drawing():
+class Drawing:
     def __init__(self):
         self.idx = 1
         self.fig = plt.gcf()
-        self.fig.set_size_inches(12, 12)
+        self.fig.set_size_inches(10, 6)
         self.list_graphs = ['small_graph', 'big_graph', 'first', 'second', 'third']
         self.dict_layout = {i: nx.kamada_kawai_layout for i in self.list_graphs}
         self.dict_layout['small_graph'] = nx.fruchterman_reingold_layout
@@ -47,6 +47,7 @@ class Drawing():
 class Application(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
+        self.configure(bg='white')
         self.title('Drawing graph')
         self.plot = Drawing()
         self.create_widgets()
@@ -66,18 +67,13 @@ class Application(tk.Tk):
 
     def create_buttons(self):
         self.frame = tk.Frame(self)
-        button_next = tk.Button(master=self.frame, text="Next graph", command=self.next_graph, font='arial 15')
+        button_next = tk.Button(master=self.frame, text="Next graph", command=self.next_graph, font='arial 15', bg='white')
         button_next.pack(side=tk.RIGHT, anchor=tk.W)
-        button_last = tk.Button(master=self.frame, text="Last graph", command=self.last_graph, font='arial 15')
+        button_last = tk.Button(master=self.frame, text="Last graph", command=self.last_graph, font='arial 15', bg='white')
         button_last.pack(side=tk.LEFT, anchor=tk.W)
-        self.frame.pack(side=tk.BOTTOM, padx=10)
+        self.frame.pack(side=tk.BOTTOM)
 
 
 app = Application()
 
-while True:
-    try:
-        app.mainloop()
-        break
-    except UnicodeDecodeError:
-        pass
+app.mainloop()
