@@ -51,6 +51,12 @@ class Application(tk.Tk):
         self.title('Drawing graph')
         self.plot = Drawing()
         self.create_widgets()
+        self.destroy_flag = True
+        self.protocol('WM_DELETE_WINDOW', self.destroy_window)
+
+    def destroy_window(self):
+        self.destroy_flag = False
+        self.destroy()
 
     def last_graph(self):
         self.plot.drawing_last_graph(self.canvas)
@@ -76,4 +82,5 @@ class Application(tk.Tk):
 
 app = Application()
 
-app.mainloop()
+while app.destroy_flag:
+    app.update()
