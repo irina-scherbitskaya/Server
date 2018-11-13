@@ -4,30 +4,54 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import tkinter as tk
 import warnings
+import socket
+from enum import Enum
+
 warnings.filterwarnings('ignore')
 
 
+# enumeration of actions for a request to server
+class Action(Enum):
+    LOGIN = 1
+    LOGOUT = 2
+    MOVE = 3
+    UPGRADE = 4
+    TURN = 5
+    PLAYER = 6
+    MAP = 10
+
+
+# enumeration of results of server
+class Result(Enum):
+    OKEY = 0
+    BAD_COMMAND = 1
+    RESOURCE_NOT_FOUND = 2
+    ACCESS_DENIED = 3
+    NOT_READY = 4
+    TIMEOUT = 5
+    INTERNAL_SERVER_ERROR = 500
+
+
+# draws a graph using pyplot
 class Drawing:
     def __init__(self):
         self.idx = 1
         self.fig = plt.gcf()
         self.fig.set_size_inches(10, 6)
         self.list_graphs = ['small_graph', 'big_graph', 'first', 'second', 'third']
-        self.dict_layout = {i: nx.kamada_kawai_layout for i in self.list_graphs}
-        self.dict_layout['small_graph'] = nx.fruchterman_reingold_layout
 
     def drawing_graph(self, canvas):
         self.fig.clear()
         G = self.parse_graph()
         labels = nx.get_edge_attributes(G, 'weight')
-        pos = self.dict_layout[self.list_graphs[self.idx]](G, weight=None)
+        pos = nx.kamada_kawai_layout(G, weight=None)
         nx.draw_networkx_edge_labels(G, pos, font_size=8, edge_labels=labels)
         nx.draw_networkx(G, pos=pos, node_color='#DDA0DD', with_labels=True, font_size=8, node_size=200)
         canvas.draw_idle()
 
     def parse_graph(self):
         with open('Graphs/%s.json' % self.list_graphs[self.idx]) as f:
-           data = js.load(f)
+            data = js.load(f)
         G = nx.Graph()
         G.add_nodes_from([v['idx'] for v in data['points']])
         G.add_weighted_edges_from([(e['points'][0], e['points'][1], e['length']) for e in data['lines']])
@@ -44,6 +68,7 @@ class Drawing:
             self.drawing_graph(canvas)
 
 
+# creates gui
 class Application(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
@@ -73,14 +98,47 @@ class Application(tk.Tk):
 
     def create_buttons(self):
         self.frame = tk.Frame(self)
-        button_next = tk.Button(master=self.frame, text="Next graph", command=self.next_graph, font='arial 15', bg='white')
+        button_next = tk.Button(master=self.frame, text="Next graph", command=self.next_graph, font='arial 15',
+                                bg='white')
         button_next.pack(side=tk.RIGHT, anchor=tk.W)
-        button_last = tk.Button(master=self.frame, text="Last graph", command=self.last_graph, font='arial 15', bg='white')
+        button_last = tk.Button(master=self.frame, text="Last graph", command=self.last_graph, font='arial 15',
+                                bg='white')
         button_last.pack(side=tk.LEFT, anchor=tk.W)
         self.frame.pack(side=tk.BOTTOM)
 
 
-app = Application()
+# class processes the message to send to server
+class ActionMessage:
 
-while app.destroy_flag:
-    app.update()
+    def __init__(self, action, data_length, data):
+        self.action = action
+        self.data_length = data_length;
+        self.data = data
+
+    def get_msg_of_bytes(self):
+        bytes_action = self.action.value.to_bytes(4, 'little')
+        bytes_length = len(self.data).to_bytes(4, 'little')
+        return bytes_action + bytes_length + bytes(self.data, encoding='utf-8')
+
+
+# class processes a response message from server
+
+class ResponseMessage:
+
+    def __init__(self, bytes):
+        self.action = Result.OKEY
+        self.data_length = 0
+        self.data = ''
+        self.get_date(bytes)
+
+    def get_date(self, bytes):
+        size = 4
+        self.action = int.from_bytes(bytes[:size], 'little')
+        self.data_length = int.from_bytes(bytes[size:size*2], 'little')
+        self.data = bytes[size*2:].decode('utf-8')
+
+
+if __name__ == "__main__":
+    app = Application()
+    while app.destroy_flag:
+       app.update()
