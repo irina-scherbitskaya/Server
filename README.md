@@ -1,4 +1,4 @@
-# Gameplay
+# Server
 
 ## Задания
 
