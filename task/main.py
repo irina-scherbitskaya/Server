@@ -122,23 +122,66 @@ class ActionMessage:
 
 
 # class processes a response message from server
-
 class ResponseMessage:
 
-    def __init__(self, bytes):
-        self.action = Result.OKEY
+    def __init__(self, bytes_msg):
+        self.result = Result.OKEY
         self.data_length = 0
         self.data = ''
-        self.get_date(bytes)
+        self.get_date(bytes_msg)
 
-    def get_date(self, bytes):
+    def get_date(self, bytes_msg):
         size = 4
-        self.action = int.from_bytes(bytes[:size], 'little')
-        self.data_length = int.from_bytes(bytes[size:size*2], 'little')
-        self.data = bytes[size*2:].decode('utf-8')
+        self.result = int.from_bytes(bytes_msg[:size], 'little')
+        if len(bytes_msg) > 4:
+            self.data_length = int.from_bytes(bytes_msg[size:size * 2], 'little')
+            self.data = bytes_msg[size * 2:].decode('utf-8')
+
+
+# working with server
+class Socket:
+    sock = socket.socket()
+    host = 'wgforge-srv.wargaming.net'
+    port = 443
+
+    @staticmethod
+    def connect():
+        Socket.sock.connect((Socket.host, Socket.port))
+
+    @staticmethod
+    def send(action, data):
+        msg = ActionMessage(action, len(data), data).get_msg_of_bytes()
+        try:
+            Socket.sock.send(msg)
+        except:
+            Socket.sock.connect((Socket.host, Socket.port))
+            Socket.sock.send(msg)
+
+    @staticmethod
+    def receive():
+        result = Socket.sock.recv(4)
+        len_msg = b''
+        msg = b''
+        if int.from_bytes(result, 'little') == 0:
+            len_msg = Socket.sock.recv(4)
+            msg = Socket.sock.recv(int.from_bytes(len_msg, 'little'))
+        print(int.from_bytes(result, 'little'))
+        return ResponseMessage(result+len_msg+msg)
+
+    @staticmethod
+    def close():
+        Socket.sock.close()
 
 
 if __name__ == "__main__":
+    Socket.connect()
+    Socket.send(Action.LOGIN, '{"name":"Boris"}')
+    pers = Socket.receive()
+    Socket.send(Action.MAP, '{"layer":0}')
+    map = Socket.receive()
+
     app = Application()
     while app.destroy_flag:
        app.update()
+        
+    Socket.close()
