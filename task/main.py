@@ -34,47 +34,51 @@ class Result(Enum):
 
 # draws a graph using pyplot
 class Drawing:
-    def __init__(self):
-        self.idx = 1
+    def __init__(self, maps):
+        self.idx = 0
         self.fig = plt.gcf()
         self.fig.set_size_inches(10, 6)
-        self.list_graphs = ['small_graph', 'big_graph', 'first', 'second', 'third']
+        self.list_map = []
+        for map in maps:
+            self.push_map(map)
 
-    def drawing_graph(self, canvas):
+    def push_map(self, json_str):
+        self.list_map.append(self.parse_map(json_str))
+
+    def drawing_map(self, canvas):
         self.fig.clear()
-        G = self.parse_graph()
+        G = self.list_map[self.idx]
         labels = nx.get_edge_attributes(G, 'weight')
         pos = nx.kamada_kawai_layout(G, weight=None)
         nx.draw_networkx_edge_labels(G, pos, font_size=8, edge_labels=labels)
         nx.draw_networkx(G, pos=pos, node_color='#DDA0DD', with_labels=True, font_size=8, node_size=200)
         canvas.draw_idle()
 
-    def parse_graph(self):
-        with open('Graphs/%s.json' % self.list_graphs[self.idx]) as f:
-            data = js.load(f)
+    def parse_map(self, json_str):
+        data = js.loads(json_str)
         G = nx.Graph()
         G.add_nodes_from([v['idx'] for v in data['points']])
         G.add_weighted_edges_from([(e['points'][0], e['points'][1], e['length']) for e in data['lines']])
         return G
 
-    def drawing_next_graph(self, canvas):
-        if self.idx < len(self.list_graphs) - 1:
+    def drawing_next_map(self, canvas):
+        if len(self.list_map) - 1 > self.idx > -1:
             self.idx += 1
-            self.drawing_graph(canvas)
+            self.drawing_map(canvas)
 
-    def drawing_last_graph(self, canvas):
-        if self.idx > 0:
+    def drawing_last_map(self, canvas):
+        if len(self.list_map) - 1 > self.idx > 0:
             self.idx -= 1
-            self.drawing_graph(canvas)
+            self.drawing_map(canvas)
 
 
 # creates gui
 class Application(tk.Tk):
-    def __init__(self):
+    def __init__(self, maps):
         tk.Tk.__init__(self)
         self.configure(bg='white')
         self.title('Drawing graph')
-        self.plot = Drawing()
+        self.map = Drawing(maps)
         self.create_widgets()
         self.destroy_flag = True
         self.protocol('WM_DELETE_WINDOW', self.destroy_window)
@@ -84,16 +88,16 @@ class Application(tk.Tk):
         self.destroy()
 
     def last_graph(self):
-        self.plot.drawing_last_graph(self.canvas)
+        self.map.drawing_last_map(self.canvas)
 
     def next_graph(self):
-        self.plot.drawing_next_graph(self.canvas)
+        self.map.drawing_next_map(self.canvas)
 
     def create_widgets(self):
-        self.canvas = FigureCanvasTkAgg(self.plot.fig, master=self)
+        self.canvas = FigureCanvasTkAgg(self.map.fig, master=self)
         self.create_buttons()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        self.plot.drawing_graph(self.canvas)
+        self.map.drawing_map(self.canvas)
         self.canvas.draw()
 
     def create_buttons(self):
@@ -128,9 +132,9 @@ class ResponseMessage:
         self.result = Result.OKEY
         self.data_length = 0
         self.data = ''
-        self.get_date(bytes_msg)
+        self.get_data(bytes_msg)
 
-    def get_date(self, bytes_msg):
+    def get_data(self, bytes_msg):
         size = 4
         self.result = int.from_bytes(bytes_msg[:size], 'little')
         if len(bytes_msg) > 4:
@@ -164,8 +168,10 @@ class Socket:
         msg = b''
         if int.from_bytes(result, 'little') == 0:
             len_msg = Socket.sock.recv(4)
-            msg = Socket.sock.recv(int.from_bytes(len_msg, 'little'))
-        print(int.from_bytes(result, 'little'))
+            count = int.from_bytes(len_msg, 'little')
+            while count > 0:
+                msg += Socket.sock.recv(min(4, count))
+                count -= 4
         return ResponseMessage(result+len_msg+msg)
 
     @staticmethod
@@ -175,13 +181,13 @@ class Socket:
 
 if __name__ == "__main__":
     Socket.connect()
-    Socket.send(Action.LOGIN, '{"name":"Boris"}')
+    Socket.send(Action.LOGIN, '{"name":"Begemotik"}')
     pers = Socket.receive()
     Socket.send(Action.MAP, '{"layer":0}')
     map = Socket.receive()
+    app = Application([map.data])
 
-    app = Application()
     while app.destroy_flag:
        app.update()
-        
+
     Socket.close()
