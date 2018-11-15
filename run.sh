@@ -1,5 +1,2 @@
-pip install networkx
-pip install matplotlib
-pip install scipy
-
+pip install -r requirements.txt
 python3 src/main.py
