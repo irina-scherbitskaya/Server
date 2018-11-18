@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt
-from PyQt5.QtGui import QBrush, QColor, QPainter, QRadialGradient, QPen
+from PyQt5.QtGui import QBrush, QColor, QPainter, QRadialGradient, QPen, QFont
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,
                              QGridLayout, QVBoxLayout, QHBoxLayout,
                              QLabel, QLineEdit, QPushButton, QStyle)
@@ -8,24 +8,28 @@ from src.maps import *
 size_x = 800
 size_y = 650
 indent = 10
+size_point = 30
+
+# new poses for drawing
+def ret_new_poses(pos_points):
+    new_poses = dict()
+    for idx, pos in pos_points.items():
+        new_poses[idx] = QPointF(pos[0] + size_x / 2, pos[1] + size_y / 2)
+    return new_poses
 
 
 #drawing graphs
-class Graph(QGraphicsItem):
+class DrawGraph(QGraphicsItem):
     def __init__(self, layer):
-        super(Graph, self).__init__()
-        self.new_poses = dict()
+        super(DrawGraph, self).__init__()
+        self.new_poses = ret_new_poses(layer.pos_points)
         self.layer = layer
-        #new poses for drawing
-        for idx, pos in layer.pos_points.items():
-            self.new_poses[idx]= QPointF(pos[0]+size_x/2,pos[1]+size_y/2)
         self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
     def boundingRect(self):
         return QRectF(0, 0, size_x, size_y)
 
     def paint(self, painter, option, widget):
-        print(len(self.new_poses))
         painter.setPen(QColor(0, 0, 0))
         painter.setBrush(QColor(221, 160, 221))
         for idx, line in self.layer.lines.items():
@@ -33,7 +37,27 @@ class Graph(QGraphicsItem):
             point2 = self.new_poses[line.point2]
             painter.drawLine(point1, point2)
         for idx, point in self.new_poses.items():
-            painter.drawEllipse(point, 30, 30)
+            painter.drawEllipse(point, size_point, size_point)
+
+
+#drawing posts and trains
+class DrawPostTrain(QGraphicsItem):
+    def __init__(self, layer0, layer1):
+        super(DrawPostTrain, self).__init__()
+        self.new_poses = ret_new_poses(layer0.pos_points)
+        self.layer1 = layer1
+        self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
+
+    def boundingRect(self):
+        return QRectF(0, 0, size_x, size_y)
+
+    def paint(self, painter, option, widget):
+        painter.setPen(QColor(75, 0, 130))
+        painter.setFont(QFont('Times', 15))
+        for idx, post in self.layer1.posts.items():
+            point = self.new_poses[post.point]
+            len_name = len(post.name)*7
+            painter.drawText(point.x()-len_name/2, point.y() - size_point, post.name)
 
 
 class Application(QGraphicsView):
@@ -58,16 +82,24 @@ class Application(QGraphicsView):
         self.setGeometry(x - size_x/2, y - size_y/2, size_x, size_y)
         self.setSceneRect(x - size_x/2 + indent, y - size_y/2 + indent, size_x - indent, size_y - indent)
 
+
+    def add_item(self, item):
+        pass
+
     #add and draw layer
     def push_layer(self, layer, data):
         if layer == 0:
             self.maps.push_layer(Layer0(data))
-            graph = Graph(self.maps.get_last())
+            graph = DrawGraph(self.maps.get(0))
             self.scene.addItem(graph)
             graph.setPos(self.center[0], self.center[1])
-            self.update()
 
         elif layer == 1:
             self.maps.push_layer(Layer1(data))
+            post_train = DrawPostTrain(self.maps.get(0), self.maps.get(1))
+            self.scene.addItem(post_train)
+            post_train.setPos(self.center[0], self.center[1])
+
+        self.update()
 
 

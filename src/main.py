@@ -2,6 +2,7 @@ import sys
 import warnings
 from src.forserver import *
 from src.gui import *
+import atexit
 warnings.filterwarnings('ignore')
 
 
@@ -18,13 +19,17 @@ class Game:
         Socket.send(Action.LOGIN, '{"name":"%s"}' % self.pers_name)
         self.pers_data = Socket.receive()
 
+    def logout(self):
+        Socket.send(Action.LOGOUT, '')
+        Socket.close()
+
     def get_maps(self):
         Socket.send(Action.MAP, '{"layer":0}')
         rec = Socket.receive()
         self.app.push_layer(0, rec.data)
-        #Socket.send(Action.MAP, '{"layer":1}')
-        #rec = Socket.receive()
-        #self.app.maps.push_layer(1, rec.data)
+        Socket.send(Action.MAP, '{"layer":1}')
+        rec = Socket.receive()
+        self.app.push_layer(1, rec.data)
         #self.app.show()
 
     def game_update(self):
@@ -39,5 +44,5 @@ if __name__ == "__main__":
     game = Game()
     game.login()
     game.get_maps()
-
+    atexit.register(game.logout)
     sys.exit(app.exec_())

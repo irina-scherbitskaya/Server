@@ -1,6 +1,12 @@
 import matplotlib.image as mpimg
-
+from enum import Enum
 train_img = 'resource/train.png'
+
+
+class PostType(Enum):
+    TOWN = 1
+    MARKET = 2
+    STORAGE = 3
 
 
 class Train:
@@ -8,7 +14,6 @@ class Train:
         self.line = train['line_idx']
         self.position = train['position']
         self.speed = train['speed']
-        self.img = mpimg.imread(train_img, 'png')
 
 
 class Point:
@@ -21,3 +26,10 @@ class Line:
     def __init__(self, point):
         self.point1 = point[0]
         self.point2 = point[1]
+
+
+class Post:
+    def __init__(self, post):
+        self.type = PostType(post['type'])
+        self.name = post['name']
+        self.point = post['point_idx']
