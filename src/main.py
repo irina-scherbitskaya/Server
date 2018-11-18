@@ -2,6 +2,7 @@ import sys
 import warnings
 from src.forserver import *
 from src.gui import *
+from src.gamedetails import *
 import atexit
 warnings.filterwarnings('ignore')
 
@@ -14,6 +15,7 @@ class Game:
         self.pers_name = pers
         self.pers_data = None
         self.app = Application()
+        self.layers = [None]*2
 
     def login(self):
         Socket.send(Action.LOGIN, '{"name":"%s"}' % self.pers_name)
@@ -23,14 +25,24 @@ class Game:
         Socket.send(Action.LOGOUT, '')
         Socket.close()
 
-    def get_maps(self):
-        Socket.send(Action.MAP, '{"layer":0}')
+    def start_game(self):
+        self.update_layer(0)
+        self.update_layer(1)
+        self.app.show()
+
+    def update_layer(self, layer):
+        Socket.send(Action.MAP, '{"layer":%s}' % layer)
         rec = Socket.receive()
-        self.app.push_layer(0, rec.data)
-        Socket.send(Action.MAP, '{"layer":1}')
+        if layer == 0:
+            self.layers[layer] = Layer0(rec.data)
+        elif layer ==1:
+            self.layers[layer] = Layer1(rec.data)
+        self.app.update_layer(layer, self.layers[layer])
+
+    def tick(self):
+        Socket.send(Action.TURN,'')
         rec = Socket.receive()
-        self.app.push_layer(1, rec.data)
-        #self.app.show()
+        self.update_layer(1)
 
     def game_update(self):
         sys.exit(self.app.exec_())
@@ -43,6 +55,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     game = Game()
     game.login()
-    game.get_maps()
+    game.start_game()
     atexit.register(game.logout)
     sys.exit(app.exec_())

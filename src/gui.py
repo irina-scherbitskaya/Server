@@ -3,7 +3,6 @@ from PyQt5.QtGui import QBrush, QColor, QPainter, QRadialGradient, QPen, QFont
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,
                              QGridLayout, QVBoxLayout, QHBoxLayout,
                              QLabel, QLineEdit, QPushButton, QStyle)
-from src.maps import *
 
 size_x = 800
 size_y = 650
@@ -41,9 +40,9 @@ class DrawGraph(QGraphicsItem):
 
 
 #drawing posts and trains
-class DrawPostTrain(QGraphicsItem):
+class DrawDetails(QGraphicsItem):
     def __init__(self, layer0, layer1):
-        super(DrawPostTrain, self).__init__()
+        super(DrawDetails, self).__init__()
         self.new_poses = ret_new_poses(layer0.pos_points)
         self.layer1 = layer1
         self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
@@ -64,13 +63,12 @@ class Application(QGraphicsView):
 
     def __init__(self):
         super(Application, self).__init__()
-        self.maps = Map()
         self.center = None
         self.set_position()
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
         self.setWindowTitle("Game")
-        self.show()
+        self.layers = [None]*2
 
     #set widgets on center of window with size = (800x600)
     def set_position(self):
@@ -87,18 +85,17 @@ class Application(QGraphicsView):
         pass
 
     #add and draw layer
-    def push_layer(self, layer, data):
+    def update_layer(self, layer, data):
+        self.layers[layer] = data
         if layer == 0:
-            self.maps.push_layer(Layer0(data))
-            graph = DrawGraph(self.maps.get(0))
+            graph = DrawGraph(data)
             self.scene.addItem(graph)
             graph.setPos(self.center[0], self.center[1])
 
         elif layer == 1:
-            self.maps.push_layer(Layer1(data))
-            post_train = DrawPostTrain(self.maps.get(0), self.maps.get(1))
-            self.scene.addItem(post_train)
-            post_train.setPos(self.center[0], self.center[1])
+            details = DrawDetails(self.layers[0], self.layers[1])
+            self.scene.addItem(details)
+            details.setPos(self.center[0], self.center[1])
 
         self.update()
 
