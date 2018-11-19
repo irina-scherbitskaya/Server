@@ -10,12 +10,14 @@ class PostType(Enum):
     MARKET = 2
     STORAGE = 3
 
+
 class Layer:
     def parse_layer(self, json_str):
         pass
 
     def get_pos(self):
         pass
+
 
 class Layer0(Layer):
     def __init__(self, json):
@@ -54,7 +56,8 @@ class Layer1(Layer):
         for train in data['trains']:
             self.trains[train['idx']] = Train(train)
         for post in data['posts']:
-            self.posts[post['idx']] = Post(post)
+            self.posts[post['idx']] = CreatorPost.CreatePost(post)
+
 
 class Train:
     def __init__(self, train):
@@ -75,9 +78,69 @@ class Line:
         self.point2 = point[1]
 
 
+#created post according to the type
+class CreatorPost:
+    @staticmethod
+    def CreatePost(post):
+        ret_post = Post(post)
+        if post['type'] == 1:
+            ret_post = Town(post)
+        elif post['type'] == 2:
+            ret_post = Market(post)
+        elif post['type'] == 3:
+            ret_post = Storage(post)
+        return ret_post
+
+
 class Post:
     def __init__(self, post):
-        self.type = PostType(post['type'])
         self.name = post['name']
         self.point = post['point_idx']
-        
+        self.idx = post['idx']
+
+    def tostring(self):
+        return '%s\n' % self.name
+
+
+class Town(Post):
+    def __init__(self, town):
+        super().__init__(town)
+        self.armor = town['armor']
+        self.armor_capacity = town['armor_capacity']
+        self.player = town['player_idx']
+        self.population = town['population']
+        self.population_capacity = town['population_capacity']
+        self.product = town['product']
+        self.product_capacity = town['product_capacity']
+        self.color = '#FFFF00'
+
+    def tostring(self):
+        return super().tostring()+'armor: %d \npopulation: %d \n' \
+                                  'product: %d' % (self.armor, self.population, self.product)
+
+
+class Market(Post):
+    def __init__(self, market):
+        super().__init__(market)
+        self.replenishment = market['replenishment']
+        self.product = market['product']
+        self.product_capacity = market['product_capacity']
+        self.color = '#87CEEB'
+
+    def tostring(self):
+        return super().tostring() + 'product: %d' % self.product
+
+
+class Storage(Post):
+    def __init__(self, storage):
+        super().__init__(storage)
+        self.armor = storage['armor']
+        self.armor_capacity = storage['armor_capacity']
+        self.replenishment = storage['replenishment']
+        self.color = '#808080'
+
+    def tostring(self):
+        return super().tostring() + 'armor: %d\n' % self.armor
+
+
+

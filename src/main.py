@@ -1,8 +1,8 @@
 import sys
 import warnings
-from src.forserver import *
-from src.gui import *
-from src.gamedetails import *
+from forserver import *
+from gui import *
+from gamedetails import *
 import atexit
 warnings.filterwarnings('ignore')
 
@@ -43,12 +43,6 @@ class Game:
         Socket.send(Action.TURN,'')
         rec = Socket.receive()
         self.update_layer(1)
-
-    def game_update(self):
-        sys.exit(self.app.exec_())
-
-    def end(self):
-        Socket.close()
 
 
 if __name__ == "__main__":

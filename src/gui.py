@@ -6,8 +6,9 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraph
 
 size_x = 800
 size_y = 650
-indent = 10
+indent = 20
 size_point = 30
+
 
 # new poses for drawing
 def ret_new_poses(pos_points):
@@ -36,7 +37,8 @@ class DrawGraph(QGraphicsItem):
             point2 = self.new_poses[line.point2]
             painter.drawLine(point1, point2)
         for idx, point in self.new_poses.items():
-            painter.drawEllipse(point, size_point, size_point)
+            painter.drawRect(point.x() - size_point, point.y() - size_point,
+                             2*size_point,2*size_point)
 
 
 #drawing posts and trains
@@ -51,12 +53,18 @@ class DrawDetails(QGraphicsItem):
         return QRectF(0, 0, size_x, size_y)
 
     def paint(self, painter, option, widget):
-        painter.setPen(QColor(75, 0, 130))
-        painter.setFont(QFont('Times', 15))
+
+        painter.setPen(QColor(0, 0, 0))
+        painter.setFont(QFont('Times', 10))
         for idx, post in self.layer1.posts.items():
             point = self.new_poses[post.point]
-            len_name = len(post.name)*7
-            painter.drawText(point.x()-len_name/2, point.y() - size_point, post.name)
+            painter.setBrush(QColor(post.color))
+            #set rect for text
+            painter.drawRect(point.x() - size_point, point.y() - size_point,
+                             2*size_point, 2*size_point)
+            #output of the info of the post
+            painter.drawText(QRectF(point.x() - size_point + 2, point.y() - size_point + 2,
+                             point.x() + size_point,point.y() + size_point),  post.tostring())
 
 
 class Application(QGraphicsView):
