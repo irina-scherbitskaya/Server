@@ -38,7 +38,7 @@ class Layer0(Layer):
     def create_graph(self, data):
         self.graph.add_nodes_from([v['idx'] for v in data['points']])
         self.graph.add_weighted_edges_from([(e['points'][0], e['points'][1], e['length']) for e in data['lines']])
-        tmp_pos = nx.kamada_kawai_layout(self.graph, scale=250)
+        tmp_pos = nx.kamada_kawai_layout(self.graph, scale=290)
         self.pos_points = nx.spring_layout(self.graph, pos=tmp_pos, fixed=tmp_pos, iterations=100, scale=250)
 
     def get_pos(self):
@@ -78,7 +78,7 @@ class Line:
         self.point2 = point[1]
 
 
-#created post according to the type
+#create post according to the type
 class CreatorPost:
     @staticmethod
     def CreatePost(post):

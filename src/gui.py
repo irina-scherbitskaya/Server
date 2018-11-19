@@ -14,7 +14,7 @@ size_point = 30
 def ret_new_poses(pos_points):
     new_poses = dict()
     for idx, pos in pos_points.items():
-        new_poses[idx] = QPointF(pos[0] + size_x / 2, pos[1] + size_y / 2)
+        new_poses[idx] = QPointF(pos[0], pos[1])
     return new_poses
 
 
@@ -27,7 +27,7 @@ class DrawGraph(QGraphicsItem):
         self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
     def boundingRect(self):
-        return QRectF(0, 0, size_x, size_y)
+        return QRectF(-size_x/2, -size_y/2, size_x, size_y)
 
     def paint(self, painter, option, widget):
         painter.setPen(QColor(0, 0, 0))
@@ -38,7 +38,7 @@ class DrawGraph(QGraphicsItem):
             painter.drawLine(point1, point2)
         for idx, point in self.new_poses.items():
             painter.drawRect(point.x() - size_point, point.y() - size_point,
-                             2*size_point,2*size_point)
+                             2*size_point, 2*size_point)
 
 
 #drawing posts and trains
@@ -50,10 +50,9 @@ class DrawDetails(QGraphicsItem):
         self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
     def boundingRect(self):
-        return QRectF(0, 0, size_x, size_y)
+        return QRectF(-size_x/2, -size_y/2, size_x, size_y)
 
     def paint(self, painter, option, widget):
-
         painter.setPen(QColor(0, 0, 0))
         painter.setFont(QFont('Times', 10))
         for idx, post in self.layer1.posts.items():
@@ -64,7 +63,7 @@ class DrawDetails(QGraphicsItem):
                              2*size_point, 2*size_point)
             #output of the info of the post
             painter.drawText(QRectF(point.x() - size_point + 2, point.y() - size_point + 2,
-                             point.x() + size_point,point.y() + size_point),  post.tostring())
+                             size_point*2, size_point*2),  post.tostring())
 
 
 class Application(QGraphicsView):
@@ -84,9 +83,9 @@ class Application(QGraphicsView):
         screen_size = (screen_geometry.width(), screen_geometry.height())
         x = screen_size[0] / 2
         y = screen_size[1] / 2
-        self.center = (x - size_x/2, y - size_y/2)
+        self.center = (x, y)
         self.setGeometry(x - size_x/2, y - size_y/2, size_x, size_y)
-        self.setSceneRect(x - size_x/2 + indent, y - size_y/2 + indent, size_x - indent, size_y - indent)
+        self.setSceneRect(x - size_x/2, y - size_y/2, size_x , size_y )
 
 
     def add_item(self, item):
