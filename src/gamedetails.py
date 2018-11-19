@@ -30,7 +30,7 @@ class Layer0(Layer):
     def parse_layer(self, json_str):
         data = js.loads(json_str)
         for line in data['lines']:
-            self.lines[line['idx']] = Line(line['points'])
+            self.lines[line['idx']] = Line(line)
         self.create_graph(data)
         for key, value in self.pos_points.items():
             self.points[key] = Point(value)
@@ -73,9 +73,10 @@ class Point:
 
 
 class Line:
-    def __init__(self, point):
-        self.point1 = point[0]
-        self.point2 = point[1]
+    def __init__(self, line):
+        self.point1 = line['points'][0]
+        self.point2 = line['points'][1]
+        self.length = line['length']
 
 
 #create post according to the type
