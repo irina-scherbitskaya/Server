@@ -39,7 +39,7 @@ class Layer0(Layer):
         self.graph.add_nodes_from([v['idx'] for v in data['points']])
         self.graph.add_weighted_edges_from([(e['points'][0], e['points'][1], e['length']) for e in data['lines']])
         tmp_pos = nx.kamada_kawai_layout(self.graph, scale=290)
-        self.pos_points = nx.spring_layout(self.graph, pos=tmp_pos, fixed=tmp_pos, iterations=100, scale=250)
+        self.pos_points = nx.spring_layout(self.graph, pos=tmp_pos, iterations=10000, scale=290)
 
     def get_pos(self):
         return self.pos_points
@@ -52,17 +52,18 @@ class Layer1(Layer):
         self.parse_layer(json)
 
     def parse_layer(self, json_str):
-        data = js.loads(json_str)
-        for train in data['trains']:
-            self.trains[train['idx']] = Train(train)
-        for post in data['posts']:
-            self.posts[post['idx']] = CreatorPost.CreatePost(post)
+        if json_str != '':
+            data = js.loads(json_str)
+            for train in data['trains']:
+                self.trains[train['idx']] = Train(train)
+            for post in data['posts']:
+                self.posts[post['idx']] = CreatorPost.CreatePost(post)
 
 
 class Train:
     def __init__(self, train):
         self.line = train['line_idx']
-        self.position = train['position']
+        self.position = train['position']+1
         self.speed = train['speed']
 
 

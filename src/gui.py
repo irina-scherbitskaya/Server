@@ -2,13 +2,7 @@ from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt
 from PyQt5.QtGui import QBrush, QColor, QPainter, QRadialGradient, QPen, QFont
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,
                              QGridLayout, QVBoxLayout, QHBoxLayout,
-                             QLabel, QLineEdit, QPushButton, QStyle)
-
-size_x = 800
-size_y = 650
-indent = 20
-size_point = 30
-size_train = 20
+                             QLabel, QLineEdit, QPushButton, QStyle, QMainWindow)
 
 
 # new poses for drawing
@@ -19,16 +13,29 @@ def ret_new_poses(pos_points):
     return new_poses
 
 
+#set size for details
+class Sizes:
+    def __init__(self):
+        self.x = QApplication.desktop().availableGeometry().width()*4/5
+        self.y = QApplication.desktop().availableGeometry().height()*4/5
+        self.center = (self.x*5/8, self.y*5/8)
+        self.indent = self.y/30
+        self.point = self.y/25
+        self.train = self.y/30
+        self.font = self.y/70
+
+
 #drawing graphs
 class DrawGraph(QGraphicsItem):
     def __init__(self, layer):
         super(DrawGraph, self).__init__()
         self.new_poses = ret_new_poses(layer.pos_points)
         self.layer = layer
+        self.sizes = Sizes()
         self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
     def boundingRect(self):
-        return QRectF(-size_x/2, -size_y/2, size_x, size_y)
+        return QRectF(-self.sizes.x/2, -self.sizes.y/2, self.sizes.x, self.sizes.y)
 
     def paint(self, painter, option, widget):
         painter.setPen(QColor(0, 0, 0))
@@ -38,8 +45,11 @@ class DrawGraph(QGraphicsItem):
             point2 = self.new_poses[line.point2]
             painter.drawLine(point1, point2)
         for idx, point in self.new_poses.items():
-            painter.drawRect(point.x() - size_point, point.y() - size_point,
-                             2*size_point, 2*size_point)
+            painter.drawRect(point.x() - self.sizes.point, point.y() - self.sizes.point,
+                             2*self.sizes.point, 2*self.sizes.point)
+
+    def update_layer0(self, layer):
+        self.layer = layer
 
 
 #drawing posts and trains
@@ -49,56 +59,54 @@ class DrawDetails(QGraphicsItem):
         self.new_poses = ret_new_poses(layer0.pos_points)
         self.layer1 = layer1
         self.layer0 = layer0
+        self.sizes = Sizes()
         self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
     def boundingRect(self):
-        return QRectF(-size_x/2, -size_y/2, size_x, size_y)
+        return QRectF(-self.sizes.x/2, -self.sizes.y/2, self.sizes.x, self.sizes.y)
 
     def paint(self, painter, option, widget):
         painter.setPen(QColor(0, 0, 0))
-        painter.setFont(QFont('Times', 10))
+        painter.setFont(QFont('Times', self.sizes.font))
+        self.draw_post(painter, option, widget)
+        self.draw_train(painter, option, widget)
+
+    def draw_post(self, painter, option, widget):
         for idx, post in self.layer1.posts.items():
             point = self.new_poses[post.point]
             painter.setBrush(QColor(post.color))
             #set rect for text
-            painter.drawRect(point.x() - size_point, point.y() - size_point,
-                             2*size_point, 2*size_point)
+            painter.drawRect(point.x() - self.sizes.point, point.y() - self.sizes.point,
+                             2*self.sizes.point, 2*self.sizes.point)
             #output of the info of the post
-            painter.drawText(QRectF(point.x() - size_point + 2, point.y() - size_point + 2,
-                             size_point*2, size_point*2),  post.tostring())
+            painter.drawText(QRectF(point.x() - self.sizes.point + 2, point.y() - self.sizes.point + 2,
+                                    self.sizes.point*2, self.sizes.point*2),  post.tostring())
+
+    def draw_train(self, painter, option, widget):
         for idx, train in self.layer1.trains.items():
             line = self.layer0.lines[train.line]
-            x1 = self.new_poses[line.point1].x()
-            x2 = self.new_poses[line.point2].x()
-            x = x1-train.position*(x1-x2)/line.length
-            y1 = self.new_poses[line.point1].y()
-            y2 = self.new_poses[line.point2].y()
-            y = y1-train.position*(y1-y2)/line.length
-            point = QPointF(x,y)
-            painter.drawEllipse(point, size_train, size_train)
+            x1, x2 = self.new_poses[line.point1].x(), self.new_poses[line.point2].x()
+            x = x1 - train.position * (x1 - x2) / line.length
+            y1, y2 = self.new_poses[line.point1].y(), self.new_poses[line.point2].y()
+            y = y1 - train.position*(y1-y2)/line.length
+            painter.drawEllipse(QPointF(x, y), self.sizes.train, self.sizes.train)
+
+    def update_layer1(self, layer):
+        self.layer1 = layer
 
 
-class Application(QGraphicsView):
-
+class Scenes(QGraphicsView):
     def __init__(self):
-        super(Application, self).__init__()
+        super(Scenes, self).__init__()
         self.center = None
-        self.set_position()
+        self.sizes = Sizes()
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
-        self.setWindowTitle("Game")
         self.layers = [None]*2
         self.sceneItems = [None]*2
-
-    #set widgets on center of window with size = (800x600)
-    def set_position(self):
-        screen_geometry = QApplication.desktop().availableGeometry()
-        screen_size = (screen_geometry.width(), screen_geometry.height())
-        x = screen_size[0] / 2
-        y = screen_size[1] / 2
-        self.center = (x, y)
-        self.setGeometry(x - size_x/2, y - size_y/2, size_x, size_y)
-        self.setSceneRect(x - size_x/2, y - size_y/2, size_x , size_y )
+        self.setSceneRect(self.sizes.center[0] - self.sizes.x/2 - self.sizes.indent,
+                          self.sizes.center[1] - self.sizes.y/2 - self.sizes.indent,
+                          self.sizes.x , self.sizes.y )
 
 
     def add_item(self, item):
@@ -107,22 +115,39 @@ class Application(QGraphicsView):
     #add and draw layer
     def update_layer(self, layer, data):
         self.layers[layer] = data
+
         if layer == 0:
             if (self.sceneItems[0]):
-                self.scene.removeItem(self.sceneItems[0])
-            graph = DrawGraph(data)
-            self.sceneItems[0]=graph
-            self.scene.addItem(graph)
-            graph.setPos(self.center[0], self.center[1])
+                self.sceneItems[0].update_layer0(self.layers[0])
+            else:
+                graph = DrawGraph(data)
+                self.sceneItems[0]=graph
+                self.scene.addItem(graph)
+                graph.setPos(self.sizes.center[0], self.sizes.center[1])
 
         elif layer == 1:
             if (self.sceneItems[1]):
-                self.scene.removeItem(self.sceneItems[1])
-            details = DrawDetails(self.layers[0], self.layers[1])
-            self.sceneItems[1]=details
-            self.scene.addItem(details)
-            details.setPos(self.center[0], self.center[1])
+                self.sceneItems[1].update_layer1(self.layers[1])
+            else:
+                details = DrawDetails(self.layers[0], self.layers[1])
+                self.sceneItems[1] = details
+                self.scene.addItem(details)
+                details.setPos(self.sizes.center[0], self.sizes.center[1])
 
         self.update()
 
+
+class Application(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.scenes = Scenes()
+        self.sizes = Sizes()
+        self.setWindowTitle('Game')
+        self.setCentralWidget(self.scenes)
+        self.setGeometry(self.sizes.center[0] - self.sizes.x/2 - self.sizes.indent,
+                         self.sizes.center[1] - self.sizes.y/2 - self.sizes.indent,
+                         self.sizes.x + self.sizes.indent * 2, self.sizes.y + self.sizes.indent * 2)
+
+    def update_layer(self, layer, data):
+        self.scenes.update_layer(layer, data)
 
