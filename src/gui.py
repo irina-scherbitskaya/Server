@@ -93,6 +93,7 @@ class DrawDetails(QGraphicsItem):
 
     def update_layer1(self, layer):
         self.layer1 = layer
+        self.update()
 
 
 class Scenes(QGraphicsView):
@@ -137,17 +138,4 @@ class Scenes(QGraphicsView):
         self.update()
 
 
-class Application(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.scenes = Scenes()
-        self.sizes = Sizes()
-        self.setWindowTitle('Game')
-        self.setCentralWidget(self.scenes)
-        self.setGeometry(self.sizes.center[0] - self.sizes.x/2 - self.sizes.indent,
-                         self.sizes.center[1] - self.sizes.y/2 - self.sizes.indent,
-                         self.sizes.x + self.sizes.indent * 2, self.sizes.y + self.sizes.indent * 2)
-
-    def update_layer(self, layer, data):
-        self.scenes.update_layer(layer, data)
 

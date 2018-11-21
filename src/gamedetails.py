@@ -63,7 +63,7 @@ class Layer1(Layer):
 class Train:
     def __init__(self, train):
         self.line = train['line_idx']
-        self.position = train['position']+1
+        self.position = train['position']
         self.speed = train['speed']
 
 
