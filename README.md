@@ -1,8 +1,12 @@
 # Server
-Состав: 
-Щербицкая Ирина;
-Карабанович Егор;
-Климук Кирилл;
+
+## Состав команды:
+* [irina-scherbitskaya](https://github.com/irina-scherbitskaya) -
+**Щербицкая Ирина**
+* [Karabanovich](https://github.com/Karabanovich) -
+**Карабанович Егор**
+* [KliKir99](https://github.com/KliKir99) -
+**Климук Кирилл**
 
 ## Задания
 
@@ -11,3 +15,4 @@
 
 ### Клиент игровой великолепный II
 [Задание 2](tasks/task_2.md)
+
