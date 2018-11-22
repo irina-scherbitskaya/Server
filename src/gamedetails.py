@@ -1,7 +1,8 @@
-import matplotlib.image as mpimg
 from enum import Enum
+import random
 import networkx as nx
 import json as js
+from forserver import *
 train_img = 'resource/train.png'
 
 
@@ -145,4 +146,92 @@ class Storage(Post):
         return super().tostring() + 'armor: %d\n' % self.armor
 
 
+class Game:
 
+    def __init__(self, pers='Rondondon'):
+        Socket.connect()
+        self.pers_name = pers
+        self.pers_data = None
+        self.layers = [None] * 2
+
+    def login(self):
+        Socket.send(Action.LOGIN, '{"name":"%s"}' % self.pers_name)
+        self.pers_data = Socket.receive()
+
+    def logout(self):
+        Socket.send(Action.LOGOUT, '')
+        Socket.close()
+
+    def start_game(self):
+        self.update_layer(0)
+        self.update_layer(1)
+
+    def random_move(self, idx):
+        train = self.layers[1].trains[idx]
+        length = self.layers[0].lines[train.line].length
+        if train.position != 0 and train.position != length:
+            self.move_train_forward(idx)
+        else:
+            if train.position == 0:
+                point = self.layers[0].lines[train.line].point1
+            else:
+                point = self.layers[0].lines[train.line].point2
+            lines = []
+            for i, line in self.layers[0].lines.items():
+                if line.point1 == point or line.point2 == point:
+                    lines.append(i)
+            line = lines[random.randint(0, len(lines) - 1)]
+            self.choose_train_line(idx, line)
+
+    def move_train_forward(self, idx):
+        train = self.layers[1].trains[idx]
+        length = self.layers[0].lines[train.line].length
+        if train.position != 0 and train.position != length:
+            Socket.send(Action.MOVE, '{"line_idx":%s,"speed":%s,"train_idx":%s}' % (train.line, train.speed, idx))
+            rec = Socket.receive()
+            self.tick()
+
+    def move_train_back(self, idx):
+        train = self.layers[1].trains[idx]
+        length = self.layers[0].lines[train.line].length
+        if train.position != 0 and train.position != length:
+            Socket.send(Action.MOVE, '{"line_idx":%s,"speed":%s,"train_idx":%s}' % (train.line, -train.speed, idx))
+            rec = Socket.receive()
+            self.tick()
+
+    def stop_train(self, idx):
+        train = self.layers[1].trains[idx]
+        Socket.send(Action.MOVE, '{"line_idx":%s,"speed":%s,"train_idx":%s}' % (train.line, 0, idx))
+        rec = Socket.receive()
+        self.tick()
+
+    def choose_train_line(self, idx, line_idx):
+        train = self.layers[1].trains[idx]
+        length = self.layers[0].lines[train.line].length
+        line = self.layers[0].lines[line_idx]
+        if train.position == 0 or train.position == length:
+            if train.position == 0:
+                point = self.layers[0].lines[train.line].point1
+            else:
+                point = self.layers[0].lines[train.line].point2
+            if line.point1 == point:
+                Socket.send(Action.MOVE, '{"line_idx":%s,"speed":%s,"train_idx":%s}' % (line_idx, 1, idx))
+                rec = Socket.receive()
+                self.tick()
+            elif line.point2 == point:
+                Socket.send(Action.MOVE, '{"line_idx":%s,"speed":%s,"train_idx":%s}' % (line_idx, -1, idx))
+                rec = Socket.receive()
+                self.tick()
+
+    def update_layer(self, layer):
+        Socket.send(Action.MAP, '{"layer":%s}' % layer)
+        rec = Socket.receive()
+        if layer == 0:
+            self.layers[layer] = Layer0(rec.data)
+        elif layer == 1:
+            self.layers[layer] = Layer1(rec.data)
+
+    def tick(self):
+        Socket.send(Action.TURN, '')
+        rec = Socket.receive()
+        self.update_layer(1)
