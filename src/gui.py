@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraph
 from gamedetails import *
 import atexit
 
+
 # new poses for drawing
 def ret_new_poses(pos_points):
     new_poses = dict()
@@ -100,43 +101,51 @@ class Scenes(QGraphicsView):
     def __init__(self):
         super(Scenes, self).__init__()
         self.center = None
+        self.flag_start_game = False
         self.sizes = Sizes()
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
-        self.layers = [None]*2
+        self.game = Game()
         self.sceneItems = [None]*2
         self.setSceneRect(self.sizes.center[0] - self.sizes.x/2,
                           self.sizes.center[1] - self.sizes.y/2,
-                          self.sizes.x , self.sizes.y )
-
-
-    def add_item(self, item):
-        pass
+                          self.sizes.x, self.sizes.y)
 
     #add and draw layer
-    def update_layer(self, layer, data):
-        self.layers[layer] = data
+    def update_layer(self, layer):
 
         if layer == 0:
             if (self.sceneItems[0]):
-                self.sceneItems[0].update_layer0(self.layers[0])
+                self.sceneItems[0].update_layer0(self.game.layers[0])
             else:
-                graph = DrawGraph(data)
-                self.sceneItems[0]=graph
+                graph = DrawGraph(self.game.layers[0])
+                self.sceneItems[0] = graph
                 self.scene.addItem(graph)
                 graph.setPos(self.sizes.center[0], self.sizes.center[1])
 
         elif layer == 1:
             if (self.sceneItems[1]):
-                self.sceneItems[1].update_layer1(self.layers[1])
+                self.sceneItems[1].update_layer1(self.game.layers[1])
             else:
-                details = DrawDetails(self.layers[0], self.layers[1])
+                details = DrawDetails(self.game.layers[0], self.game.layers[1])
                 self.sceneItems[1] = details
                 self.scene.addItem(details)
                 details.setPos(self.sizes.center[0], self.sizes.center[1])
 
         self.update()
 
+    def move_train(self):
+        if self.flag_start_game:
+            self.game.random_move(1)
+            self.update_layer(1)
+
+    def start_game(self):
+        if not self.flag_start_game:
+            self.game.login()
+            self.game.start_game()
+            self.update_layer(0)
+            self.update_layer(1)
+        self.flag_start_game = True
 
 
 class Application(QMainWindow):
@@ -144,10 +153,8 @@ class Application(QMainWindow):
         super().__init__()
         #create main var and set main attr
         self.win = QWidget()
-        self.flag_start_game = False
         self.scenes = Scenes()
         self.sizes = Sizes()
-        self.game = Game()
         self.setWindowTitle('Game')
         self.setGeometry(self.sizes.center[0] - self.sizes.x/ 2 - self.sizes.indent*2,
                          self.sizes.center[1] - self.sizes.y/ 2 - self.sizes.indent*2,
@@ -156,43 +163,26 @@ class Application(QMainWindow):
         self.setCentralWidget(self.win)
         self.main_vbox = QVBoxLayout()
         self.main_vbox.addWidget(self.scenes)
-
-        #create button
+        #create buttons
         self.set_button()
-
         self.win.setLayout(self.main_vbox)
+
         self.show()
-
-    def move_train(self):
-        if self.flag_start_game:
-            self.game.random_move(1)
-            self.update_layer(1, self.game.layers[1])
-
-    def update_layer(self, layer, data):
-        self.scenes.update_layer(layer, data)
 
     def set_button(self):
         hbox = QHBoxLayout()
         hbox.addStretch(1)
-        tick_button = QPushButton('Tick')
-        tick_button.clicked.connect(self.move_train)
 
+        tick_button = QPushButton('Tick')
+        tick_button.clicked.connect(self.scenes.move_train)
         start_button = QPushButton('Start game')
-        start_button.clicked.connect(self.start_game)
+        start_button.clicked.connect(self.scenes.start_game)
 
         hbox.addWidget(tick_button)
         hbox.addWidget(start_button)
         self.main_vbox.addLayout(hbox)
 
-    def start_game(self):
-        if not self.flag_start_game:
-            self.game.login()
-            self.game.start_game()
-            self.update_layer(0, self.game.layers[0])
-            self.update_layer(1, self.game.layers[1])
-        self.flag_start_game = True
-
     def closeEvent(self, QCloseEvent):
-        atexit.register(self.game.logout)
+        atexit.register(self.scenes.game.logout)
         self.close()
 

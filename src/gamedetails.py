@@ -2,7 +2,7 @@ from enum import Enum
 import random
 import networkx as nx
 import json as js
-from forserver import *
+from client import *
 train_img = 'resource/train.png'
 
 
@@ -59,6 +59,13 @@ class Layer1(Layer):
                 self.trains[train['idx']] = Train(train)
             for post in data['posts']:
                 self.posts[post['idx']] = CreatorPost.CreatePost(post)
+
+
+class Player:
+    def __init__(self, player):
+        self.home_idx = player['home']['idx']
+        self.name = player['name']
+        self.rating = player['rating']
 
 
 class Train:
@@ -147,16 +154,16 @@ class Storage(Post):
 
 
 class Game:
-
-    def __init__(self, pers='Rondondon'):
+    def __init__(self):
         Socket.connect()
-        self.pers_name = pers
-        self.pers_data = None
+        self.players = []
         self.layers = [None] * 2
 
-    def login(self):
-        Socket.send(Action.LOGIN, '{"name":"%s"}' % self.pers_name)
-        self.pers_data = Socket.receive()
+    def login(self, name='Petya'):
+        Socket.send(Action.LOGIN, '{"name":"%s"}' % name)
+        rec = Socket.receive()
+        player_data = js.loads(rec.data)
+        self.players.append(Player(player_data))
 
     def logout(self):
         Socket.send(Action.LOGOUT, '')
