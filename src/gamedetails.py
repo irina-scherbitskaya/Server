@@ -59,6 +59,14 @@ class Layer0:
             length = self.lines[line_idx].length
         return length
 
+    def get_route(self, point1, point2):
+        route = 0
+        if self.dict_lines.get((point1, point2)) is not None:
+            route = 1
+        elif self.dict_lines.get((point2, point1)) is not None:
+            route = -1
+        return route
+
     def get_pos(self):
         return self.pos_points
 
@@ -101,6 +109,8 @@ class Train:
         self.line = train['line_idx']
         self.path = []
         self.pos_path = 0
+        #speed for each line on path
+        self.speed_on_path = []
         self.position = train['position']
         self.speed = train['speed']
         self.goods = train['goods']
@@ -240,9 +250,9 @@ class Game:
                 train = self.layers[1].trains[train_idx]
                 line = self.layers[0].lines[train.line]
                 if (len(train.path) == 0 or len(train.path) == train.pos_path) and train.position == line.length:
-                    self.get_next_path(train_idx, train, line.point2)
+                    self.get_next_path(train, line.point2)
                 elif (len(train.path) == 0 or len(train.path) == train.pos_path) and train.position == 0:
-                    self.get_next_path(train_idx, train, line.point1)
+                    self.get_next_path(train, line.point1)
                 self.move_train(train_idx, train)
         self.tick()
         self.update_layer(1)
@@ -251,12 +261,13 @@ class Game:
     def path_to_home(self, train, point):
         town = self.layers[1].posts[self.players[train.player_idx].home_idx].point
         path = nx.dijkstra_path(self.layers[0].graph, point, town)
-        train.path = [self.layers[0].dict_lines[(path[i], path[i + 1])]
-                      for i in range(0, len(path) - 2)]
-        train.pos_path = 1
+        train.path = [self.layers[0].get_line_idx(path[i], path[i + 1])
+                      for i in range(0, len(path) - 1)]
+        train.speed_on_path = [self.layers[0].get_route(path[i], path[i + 1])
+                               for i in range(0, len(path) - 1)]
 
     # get new product for home
-    def get_next_path(self, train_idx, train, point):
+    def get_next_path(self, train, point):
         max_capacity = train.goods_capacity - train.goods
         max_goods = 0
         time = 0
@@ -298,26 +309,23 @@ class Game:
                     time = len_path
                     max_goods = can_get_product
                     train.path = line_path
-                    train.pos_path = 1
+                    train.speed_on_path = [self.layers[0].get_route(path_to_market[i], path_to_market[i+1])
+                                           for i in range(0, len(path_to_market) - 1)]
 
         if max_goods == 0:
             self.path_to_home(train, point)
-        if train.pos_path == 1:
-            train.line = train.path[train.pos_path - 1]
 
-    # dont work
+    # need check
     def move_train(self, train_idx, train):
         line = self.layers[0].lines[train.line]
-        if train.position == line.length:
+        if len(train.path) != 0 and (train.position == line.length or train.position == 0):
             train.line = train.path[train.pos_path]
+            train.speed = train.speed_on_path[train.pos_path]
             train.pos_path += 1
-            train.speed = 1
-        elif train.position == 0:
-            train.line = train.path[train.pos_path]
-            train.pos_path += 1
-            train.speed = -1
+
         Socket.send(Action.MOVE, '{"line_idx":%s,"speed":%s,"train_idx":%s}' % (train.line, train.speed, train_idx))
         rec = Socket.receive()
+
 
     def update_layer(self, layer):
         Socket.send(Action.MAP, '{"layer":%s}' % layer)
