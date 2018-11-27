@@ -94,6 +94,7 @@ class DrawDetails(QGraphicsItem):
         for idx, train in self.layer1.trains.items():
             painter.setBrush(QColor(train.color))
             line = self.layer0.lines[train.line]
+            print(train.line)
             x1, x2 = self.new_poses[line.point1].x(), self.new_poses[line.point2].x()
             x = x1 - train.position * (x1 - x2) / line.length
             y1, y2 = self.new_poses[line.point1].y(), self.new_poses[line.point2].y()
@@ -135,8 +136,9 @@ class Scenes(QGraphicsView):
 
     def tick(self):
         if self.flag_start_game:
-            self.game.next_move()
+            self.game.tick()
             self.update_layer(1)
+
 
     def start_game(self):
         if not self.flag_start_game:

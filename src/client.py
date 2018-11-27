@@ -61,11 +61,11 @@ class ResponseMessage:
 # working with server
 class Socket:
     sock = socket.socket()
-    host = 'wgforge-srv.wargaming.net'
-    port = 443
+    HOST = 'wgforge-srv.wargaming.net'
+    PORT = 443
     @staticmethod
     def connect():
-        Socket.sock.connect((Socket.host, Socket.port))
+        Socket.sock.connect((Socket.HOST, Socket.PORT))
 
     @staticmethod
     def send(action, data):
@@ -73,7 +73,7 @@ class Socket:
         try:
             Socket.sock.send(msg)
         except:
-            Socket.sock.connect((Socket.host, Socket.port))
+            Socket.sock.connect((Socket.HOST, Socket.PORT))
             Socket.sock.send(msg)
 
     @staticmethod

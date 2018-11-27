@@ -90,8 +90,10 @@ class Layer1:
             data = js.loads(json_str)
             for train in data['trains']:
                 self.trains[train['idx']].update(train)
+                print(train)
             for post in data['posts']:
                 self.posts[post['idx']].update(post)
+
 
 
 class Player:
@@ -242,6 +244,7 @@ class Game:
     def start_game(self):
         self.update_layer(0)
         self.update_layer(1)
+        self.next_move()
 
     # calculation of the next move
     def next_move(self):
@@ -254,8 +257,6 @@ class Game:
                 elif (len(train.path) == 0 or len(train.path) == train.pos_path) and train.position == 0:
                     self.get_next_path(train, line.point1)
                 self.move_train(train_idx, train)
-        self.tick()
-        self.update_layer(1)
 
     # return train to home
     def path_to_home(self, train, point):
@@ -289,6 +290,7 @@ class Game:
                 for i in range(0, len(path_to_market) - 1):
                     line_path.append(self.layers[0].get_line_idx(path_to_market[i], path_to_market[i+1]))
                     len_path += self.layers[0].get_line_length(path_to_market[i], path_to_market[i+1])
+
                 print(line_path, len_path)
                 can_get_product = min(len_path * post.replenishment + post.product,
                                       post.product_capacity, train.goods_capacity)
@@ -317,15 +319,16 @@ class Game:
 
     # need check
     def move_train(self, train_idx, train):
-        line = self.layers[0].lines[train.line]
-        if len(train.path) != 0 and (train.position == line.length or train.position == 0):
-            train.line = train.path[train.pos_path]
-            train.speed = train.speed_on_path[train.pos_path]
+        line = train.line
+        line_length = self.layers[0].lines[line].length
+        speed = train.speed
+        if len(train.path) != 0 and (train.position == line_length or train.position == 0):
+            line = train.path[train.pos_path]
+            speed = train.speed_on_path[train.pos_path]
             train.pos_path += 1
-
-        Socket.send(Action.MOVE, '{"line_idx":%s,"speed":%s,"train_idx":%s}' % (train.line, train.speed, train_idx))
+        print(line, speed)
+        Socket.send(Action.MOVE, '{"line_idx":%s,"speed":%s,"train_idx":%s}' % (line, speed, train_idx))
         rec = Socket.receive()
-
 
     def update_layer(self, layer):
         Socket.send(Action.MAP, '{"layer":%s}' % layer)
@@ -344,3 +347,5 @@ class Game:
     def tick(self):
         Socket.send(Action.TURN, '')
         rec = Socket.receive()
+        self.update_layer(1)
+        self.next_move()
