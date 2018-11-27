@@ -1,11 +1,11 @@
-from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt
+from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt, QTimer
 from PyQt5.QtGui import QBrush, QColor, QPainter, QRadialGradient, QPen, QFont
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QWidget,
                              QLabel, QLineEdit, QPushButton, QStyle, QMainWindow)
 from gamedetails import *
 import atexit
-
+SLEEP_TIME = 10000
 
 # new poses for drawing
 def ret_new_poses(pos_points):
@@ -117,6 +117,9 @@ class Scenes(QGraphicsView):
         self.setSceneRect(self.sizes.center[0] - self.sizes.x/2,
                           self.sizes.center[1] - self.sizes.y/2,
                           self.sizes.x, self.sizes.y)
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.time_update)
+        self.timer.setInterval(SLEEP_TIME)
 
     def add_item(self, idx, item):
         self.sceneItems[idx] = item
@@ -136,7 +139,9 @@ class Scenes(QGraphicsView):
 
     def tick(self):
         if self.flag_start_game:
+            self.timer.stop()
             self.game.tick()
+            self.timer.start()
             self.update_layer(1)
 
 
@@ -144,9 +149,16 @@ class Scenes(QGraphicsView):
         if not self.flag_start_game:
             self.game.login()
             self.game.start_game()
+            self.timer.start()
             self.update_layer(0)
             self.update_layer(1)
         self.flag_start_game = True
+
+    def time_update(self):
+        self.game.update_layer(1)
+        self.game.next_move()
+        self.update_layer(1)
+        self.timer.start()
 
 
 class Application(QMainWindow):
@@ -167,7 +179,6 @@ class Application(QMainWindow):
         #create buttons
         self.set_button()
         self.win.setLayout(self.main_vbox)
-
         self.show()
 
     def set_button(self):
@@ -184,6 +195,6 @@ class Application(QMainWindow):
         self.main_vbox.addLayout(hbox)
 
     def closeEvent(self, QCloseEvent):
-        atexit.register(self.scenes.game.logout)
+        self.scenes.game.logout()
         self.close()
 
