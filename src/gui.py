@@ -25,6 +25,7 @@ class Sizes:
         self.indent = self.y/30
         self.point = self.y/25
         self.train = self.y/30
+        self.rad = self.y/70
 
 
 #drawing graphs
@@ -52,9 +53,8 @@ class DrawGraph(QGraphicsItem):
             x = x1 - (x1 - x2) / 2
             y1, y2 = self.new_poses[line.point1].y(), self.new_poses[line.point2].y()
             y = y1 - (y1 - y2) / 2
-            rad = 8
-            painter.drawEllipse(QPointF(x, y), rad, rad)
-            painter.drawText(x - rad/4, y + rad/4, '%d' % line.length)
+            painter.drawEllipse(QPointF(x, y), self.sizes.rad, self.sizes.rad)
+            painter.drawText(x - self.sizes.rad/4, y + self.sizes.rad/4, '%d' % line.length)
         painter.setBrush(QColor(221, 160, 221))
         for idx, point in self.new_poses.items():
             painter.drawRect(point.x() - self.sizes.point, point.y() - self.sizes.point,
