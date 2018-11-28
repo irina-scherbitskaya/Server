@@ -4,8 +4,6 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraph
                              QGridLayout, QVBoxLayout, QHBoxLayout, QWidget,
                              QLabel, QLineEdit, QPushButton, QStyle, QMainWindow)
 from gamedetails import *
-import atexit
-
 
 # new poses for drawing
 def ret_new_poses(pos_points):
@@ -183,6 +181,6 @@ class Application(QMainWindow):
         self.main_vbox.addLayout(hbox)
 
     def closeEvent(self, QCloseEvent):
-        atexit.register(self.scenes.game.logout)
+        self.scenes.game.logout
         self.close()
 
