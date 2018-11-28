@@ -7,6 +7,7 @@ from gamedetails import *
 import atexit
 SLEEP_TIME = 10000
 
+
 # new poses for drawing
 def ret_new_poses(pos_points):
     new_poses = dict()
@@ -94,7 +95,6 @@ class DrawDetails(QGraphicsItem):
         for idx, train in self.layer1.trains.items():
             painter.setBrush(QColor(train.color))
             line = self.layer0.lines[train.line]
-            print(train.line)
             x1, x2 = self.new_poses[line.point1].x(), self.new_poses[line.point2].x()
             x = x1 - train.position * (x1 - x2) / line.length
             y1, y2 = self.new_poses[line.point1].y(), self.new_poses[line.point2].y()
@@ -143,7 +143,6 @@ class Scenes(QGraphicsView):
             self.game.tick()
             self.timer.start()
             self.update_layer(1)
-
 
     def start_game(self):
         if not self.flag_start_game:

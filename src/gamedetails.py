@@ -2,8 +2,6 @@ import networkx as nx
 import json as js
 from client import *
 
-train_img = 'resource/train.png'
-
 
 class PostType(Enum):
     TOWN = 1
@@ -90,7 +88,6 @@ class Layer1:
             data = js.loads(json_str)
             for train in data['trains']:
                 self.trains[train['idx']].update(train)
-                print(train)
             for post in data['posts']:
                 self.posts[post['idx']].update(post)
 
@@ -258,6 +255,17 @@ class Game:
                     self.get_next_path(train, line.point1)
                 self.move_train(train_idx, train)
 
+    def get_path_len_speed(self, from_point, to_point):
+        path = nx.dijkstra_path(self.layers[0].graph, from_point, to_point)
+        line_path = []
+        len_path = 0
+        speed = []
+        for i in range(0, len(path) - 1):
+            line_path.append(self.layers[0].get_line_idx(path[i], path[i + 1]))
+            len_path += self.layers[0].get_line_length(path[i], path[i + 1])
+            speed.append(self.layers[0].get_route(path[i], path[i+1]))
+        return (line_path, len_path, speed)
+
     # return train to home
     def path_to_home(self, train, point):
         town = self.layers[1].posts[self.players[train.player_idx].home_idx].point
@@ -281,43 +289,34 @@ class Game:
                 if post.type != 2:
                     continue
                 # get path to market and home from point
-                path_to_market = nx.dijkstra_path(self.layers[0].graph, point, post.point)
-                path_to_home = nx.dijkstra_path(self.layers[0].graph, post.point, town.point)
-
+                path_to_market = self.get_path_len_speed(point, post.point)
+                path_to_home = self.get_path_len_speed(post.point, town.point)
+                len_path = path_to_market[1]
                 # get list of lines for train path and get length of path
-                line_path = []
-                len_path = 0
-                for i in range(0, len(path_to_market) - 1):
-                    line_path.append(self.layers[0].get_line_idx(path_to_market[i], path_to_market[i+1]))
-                    len_path += self.layers[0].get_line_length(path_to_market[i], path_to_market[i+1])
 
-                print(line_path, len_path)
                 can_get_product = min(len_path * post.replenishment + post.product,
                                       post.product_capacity, train.goods_capacity)
-                len_path *= 2
-                for i in range(0, len(path_to_home) - 1):
-                    len_path += self.layers[0].get_line_length(path_to_home[i], path_to_home[i+1])
+
+                len_path += path_to_home[1]
 
                 if len_path > town.product / town.population or can_get_product > max_capacity:
                     continue
 
                 # if need to stop
-                if len(path_to_market) == 0 and (post.replenishment > max_goods or (post.replenishment == max_goods and time > 1)):
+                if len(path_to_market) == 0 and (post.replenishment > max_goods
+                                                 or (post.replenishment == max_goods and time > 1)):
                     time = 1
                     max_goods = post.replenishment
                 # if need to move
                 elif can_get_product > max_goods or (can_get_product == max_goods and time > len_path):
-                    print(can_get_product, line_path, path_to_market)
                     time = len_path
                     max_goods = can_get_product
-                    train.path = line_path
-                    train.speed_on_path = [self.layers[0].get_route(path_to_market[i], path_to_market[i+1])
-                                           for i in range(0, len(path_to_market) - 1)]
+                    train.path = path_to_market[0]
+                    train.speed_on_path = path_to_market[2]
 
         if max_goods == 0:
             self.path_to_home(train, point)
 
-    # need check
     def move_train(self, train_idx, train):
         line = train.line
         line_length = self.layers[0].lines[line].length
@@ -326,7 +325,6 @@ class Game:
             line = train.path[train.pos_path]
             speed = train.speed_on_path[train.pos_path]
             train.pos_path += 1
-        print(line, speed)
         Socket.send(Action.MOVE, '{"line_idx":%s,"speed":%s,"train_idx":%s}' % (line, speed, train_idx))
         rec = Socket.receive()
 
