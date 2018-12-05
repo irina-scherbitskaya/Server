@@ -1,8 +1,8 @@
 import socket
 from enum import Enum
 
-little = 'little'
-size_msg = 4
+LITTLE = 'little'
+SIZE_MSG = 4
 
 
 # enumeration of actions for a request to server
@@ -37,8 +37,8 @@ class ActionMessage:
         self.msg_in_bytes = self.get_msg_in_bytes()
 
     def get_msg_in_bytes(self):
-        bytes_action = self.action.value.to_bytes(size_msg, little)
-        bytes_length = len(self.data).to_bytes(size_msg, little)
+        bytes_action = self.action.value.to_bytes(SIZE_MSG, LITTLE)
+        bytes_length = len(self.data).to_bytes(SIZE_MSG, LITTLE)
         return bytes_action + bytes_length + bytes(self.data, encoding='utf-8')
 
 
@@ -52,10 +52,10 @@ class ResponseMessage:
         self.get_data(bytes_msg)
 
     def get_data(self, bytes_msg):
-        self.result = int.from_bytes(bytes_msg[:size_msg], little)
-        if len(bytes_msg) > size_msg:
-            self.data_length = int.from_bytes(bytes_msg[size_msg:size_msg * 2], little)
-            self.data = bytes_msg[size_msg * 2:].decode('utf-8')
+        self.result = int.from_bytes(bytes_msg[:SIZE_MSG], LITTLE)
+        if len(bytes_msg) > SIZE_MSG:
+            self.data_length = int.from_bytes(bytes_msg[SIZE_MSG:SIZE_MSG * 2], LITTLE)
+            self.data = bytes_msg[SIZE_MSG * 2:].decode('utf-8')
 
 
 # working with server
@@ -78,15 +78,15 @@ class Socket:
 
     @staticmethod
     def receive():
-        result = Socket.sock.recv(size_msg)
+        result = Socket.sock.recv(SIZE_MSG)
         len_msg = b''
         msg = b''
-        if int.from_bytes(result, little) == 0:
-            len_msg = Socket.sock.recv(size_msg)
-            count = int.from_bytes(len_msg, little)
+        if int.from_bytes(result, LITTLE) == 0:
+            len_msg = Socket.sock.recv(SIZE_MSG)
+            count = int.from_bytes(len_msg, LITTLE)
             while count > 0:
-                msg += Socket.sock.recv(min(size_msg, count))
-                count -= size_msg
+                msg += Socket.sock.recv(min(SIZE_MSG, count))
+                count -= SIZE_MSG
         return ResponseMessage(result+len_msg+msg)
 
     @staticmethod
