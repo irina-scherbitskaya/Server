@@ -1,3 +1,4 @@
 scipy 
 matplotlib 
 networkx
+pyqt5
