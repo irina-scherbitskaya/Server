@@ -58,7 +58,6 @@ class ResponseMessage:
             self.data = bytes_msg[SIZE_MSG * 2:].decode('utf-8')
 
 
-# working with server
 class Socket:
     sock = socket.socket()
     HOST = 'wgforge-srv.wargaming.net'
