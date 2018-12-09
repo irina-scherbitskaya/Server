@@ -3,6 +3,7 @@ from collections import  defaultdict
 import networkx as nx
 from heapq import heappush, heappop
 from client import *
+from copy import deepcopy
 
 
 class PostType(Enum):
@@ -52,6 +53,14 @@ class Layer0:
             point2 = line.point2
         return self.points[point2]
 
+    def get_route(self, point, line):
+        route = 0
+        if line.point1 == point:
+            route = 1
+        elif line.point2 == point:
+            route = -1
+        return route
+
     def get_pos(self):
         return self.pos_points
 
@@ -60,7 +69,6 @@ class Layer1:
     def __init__(self, json):
         self.trains = dict()
         self.posts = dict()
-        self.posts_on_idx = dict()
         self.parse_layer(json)
 
     def parse_layer(self, data):
@@ -68,14 +76,12 @@ class Layer1:
             self.trains[train['idx']] = Train(train)
         for post in data['posts']:
             self.posts[post['point_idx']] = CreatorPost.CreatePost(post)
-            self.posts_on_idx[post['idx']] = self.posts[post['point_idx']]
 
     def update(self, data):
         for train in data['trains']:
             self.trains[train['idx']].update(train)
         for post in data['posts']:
             self.posts[post['point_idx']].update(post)
-            self.posts_on_idx[post['idx']].update(post)
 
 
 class Player:
@@ -117,6 +123,7 @@ class Point:
     def __init__(self, pos):
         self.pos_x = pos[0]
         self.pos_y = pos[1]
+
 
 class Line:
     def __init__(self, line):
@@ -194,8 +201,12 @@ class Market(Post):
     def update(self, market):
         self.product = market['product']
 
-    def get_goods(self, time, train):
-        return max(self.replenishment*time + self.product, self.product_capacity, train.capacity)
+    def get_goods(self, time1, time2):
+        time = time2 - time1
+        product = self.replenishment*time
+        if time1 == 0:
+            product += self.product_capacity
+        return min(product, self.product_capacity)
 
 
 class Storage(Post):
@@ -212,8 +223,35 @@ class Storage(Post):
     def update(self, storage):
         self.armor = storage['armor']
 
-    def get_goods(self, time, capacity):
-        return max(self.replenishment*time + self.armor, self.armor_capacity, capacity)
+    def get_goods(self, time1, time2):
+        time = time2 - time1
+        armor = self.replenishment*time
+        if time1 == 0:
+            armor += self.armor
+        return min(armor, self.armor_capacity)
+
+ class Path:
+    def __init__(self, goods, point):
+        self.goods = goods
+        self.point = point
+        self.start_line = -1
+        self.posts = defaultdict()
+
+    def update(self, post, time, capacity):
+        if self.posts[post.idx] is None:
+            self.posts[post.idx] = time
+            self.goods = min(capacity, self.goods + post.get_goods(0, time))
+        else:
+            self.goods = min(capacity, self.goods + post.get_goods(self.posts[post.idx], time))
+            self.posts[post.idx] = time
+
+    def __copy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        return result
 
 
 class Game:
@@ -221,6 +259,7 @@ class Game:
         Socket.connect()
         self.players = dict()
         self.layers = [None] * 2
+        self.tic = 0
 
     def login(self, name='Petya'):
         Socket.send(Action.LOGIN, '{"name":"%s"}' % name)
@@ -249,54 +288,48 @@ class Game:
                     self.get_next_line(train, line.point1)
                 self.move_train(train_idx, train)
 
-    def get_next_line(self, train, point):
-        town = self.layers[1].posts_on_idx[self.players[train.player_idx].home]
-        paths_product = self.get_paths(point,town, PostType.MARKET.value, train)
-        paths_product = sorted(paths_product, key = lambda x: x[0])
-        max_goods = 0
-        for path in paths:
-            if path
+    def get_next_line(self):
+        pass
 
+    # dijkstra
     def get_paths(self, point, town, post_type, train):
         heap = []
         # distance, point, goods, start_line
-        heappush(heap, (0, train.goods, point,  -1))
+        heappush(heap, (0, Path(train.goods, point)))
+        out = list()
         list_adj = self.layers[0].list_adjacency
-        post_goods = dict()
-        visit = dict()
-        while len(heap) > 0:
-            dist, point1, goods, start_line = heappop(heap)
+        max_point_goods = dict()
 
-            if visit[point1] is not None:
-                continue
-            visit[point1] = True
-            for line in list_adj[point1]:
+        while len(heap) > 0:
+            dist, path = heappop(heap)
+            for line in list_adj[path.point]:
                 if not line.free:
                     continue
 
-                point2 = self.layers[0].get_point2(line, point)
-                if visit[point2] is not None:
+                point2 = self.layers[0].get_point2(line, path.point)
+                dist += line.length
+
+                path = copy(path)
+                post = self.layers[1].posts[point2]
+                if post is not None:
+                    if post.type == post_type:
+                        path.update(post, dist, train.goods_capacity)
+                    elif point2 == town:
+                        out.append((path.start_line, path.goods))
+
+
+                if max_point_goods[point2] is None:
+                    max_point_goods[point2] = path.goods
+                elif max_point_goods[point2] >= path.goods:
                     continue
 
-                post = self.layers[1].posts[point2]
-                if post is not None and post_type != town.type:
-                    if post.type == post_type:
-                        goods = max(goods, post.get_goods(dist, train.goods_capacity - train.goods))
-                        if start_line == -1:
-                            post_goods = (dist, goods, line.idx)
-                        else:
-                            post_goods = (dist, goods, start_line)
-                elif post_type == town.type and point2 == town.point_idx:
-                    post_goods = (dist, goods, line.idx, point2)
-                    break
-
-                dist += line.length
-                if start_line == -1:
-                    heappush(heap, (dist + line.length, point2, goods, line.idx))
+                if path.start_line == -1:
+                    path.start_line
+                    heappush(heap, (dist, point2, goods, line.idx))
                 else:
-                    heappush(heap, (dist + line.length, point2, goods, start_line))
+                    heappush(heap, (dist, point2, goods, start_line))
 
-        return post_goods
+        return out
 
     def move_train(self, train_idx, train):
         line = train.line
@@ -319,6 +352,7 @@ class Game:
                     self.layers[layer] = Layer1(data)
                 else:
                     self.layers[layer].update(data)
+                self.tic += 1
                 self.update_ratings(data['ratings'])
 
     def update_ratings(self, ratings):
