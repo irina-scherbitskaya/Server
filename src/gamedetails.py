@@ -283,39 +283,40 @@ class Game:
         town = self.layers[1].posts[self.players[train.player_idx].home_idx]
         train.path = []
         train.pos_path = 0
-        if max_capacity != 0:
-            for idx, post in self.layers[1].posts.items():
+        if town.population != 0:
+            if max_capacity != 0:
+                for idx, post in self.layers[1].posts.items():
 
-                if post.type != 2:
-                    continue
-                # get path to market and home from point
-                path_to_market = self.get_path_len_speed(point, post.point)
-                path_to_home = self.get_path_len_speed(post.point, town.point)
-                len_path = path_to_market[1]
-                # get list of lines for train path and get length of path
+                    if post.type != 2:
+                        continue
+                    # get path to market and home from point
+                    path_to_market = self.get_path_len_speed(point, post.point)
+                    path_to_home = self.get_path_len_speed(post.point, town.point)
+                    len_path = path_to_market[1]
+                    # get list of lines for train path and get length of path
 
-                can_get_product = min(len_path * post.replenishment + post.product,
-                                      post.product_capacity, train.goods_capacity)
+                    can_get_product = min(len_path * post.replenishment + post.product,
+                                          post.product_capacity, train.goods_capacity)
 
-                len_path += path_to_home[1]
+                    len_path += path_to_home[1]
 
-                if len_path > town.product / town.population or can_get_product > max_capacity:
-                    continue
+                    if len_path > town.product / town.population or can_get_product > max_capacity:
+                        continue
 
-                # if need to stop
-                if len(path_to_market) == 0 and (post.replenishment > max_goods
-                                                 or (post.replenishment == max_goods and time > 1)):
-                    time = 1
-                    max_goods = post.replenishment
-                # if need to move
-                elif can_get_product > max_goods or (can_get_product == max_goods and time > len_path):
-                    time = len_path
-                    max_goods = can_get_product
-                    train.path = path_to_market[0]
-                    train.speed_on_path = path_to_market[2]
+                    # if need to stop
+                    if len(path_to_market) == 0 and (post.replenishment > max_goods
+                                                     or (post.replenishment == max_goods and time > 1)):
+                        time = 1
+                        max_goods = post.replenishment
+                    # if need to move
+                    elif can_get_product > max_goods or (can_get_product == max_goods and time > len_path):
+                        time = len_path
+                        max_goods = can_get_product
+                        train.path = path_to_market[0]
+                        train.speed_on_path = path_to_market[2]
 
-        if max_goods == 0:
-            self.path_to_home(train, point)
+            if max_goods == 0:
+                self.path_to_home(train, point)
 
     def move_train(self, train_idx, train):
         line = train.line
