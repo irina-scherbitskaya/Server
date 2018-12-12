@@ -23,9 +23,9 @@ class Sizes:
         self.y = QApplication.desktop().availableGeometry().height()*4/5
         self.center = (self.x*5/8, self.y*5/8)
         self.indent = self.y/15
-        self.point = self.y/25
-        self.train = self.y/30
-        self.rad = self.y/70
+        self.point = self.y/50
+        self.train = self.y/60
+        self.rad = self.y/100
 
 
 #drawing graphs
@@ -41,23 +41,25 @@ class DrawGraph(QGraphicsItem):
 
     def paint(self, painter, option, widget):
         painter.setPen(QColor(0, 0, 0))
-        painter.setFont(QFont('Times', 8))
+        painter.setFont(QFont('Times', 5))
         painter.setBrush(QColor(255, 255, 255))
-        for idx, line in self.layer.lines.items():
-            point1 = self.new_poses[line.point1]
-            point2 = self.new_poses[line.point2]
-            painter.drawLine(point1, point2)
-            #print length
-            x1, x2 = self.new_poses[line.point1].x(), self.new_poses[line.point2].x()
-            x = x1 - (x1 - x2) / 2
-            y1, y2 = self.new_poses[line.point1].y(), self.new_poses[line.point2].y()
-            y = y1 - (y1 - y2) / 2
-            painter.drawEllipse(QPointF(x, y), self.sizes.rad, self.sizes.rad)
-            painter.drawText(x - self.sizes.rad/4, y + self.sizes.rad/4, '%d' % line.length)
+        for line in self.layer.lines:
+            if line is not None:
+                point1 = self.new_poses[line.point1]
+                point2 = self.new_poses[line.point2]
+                painter.drawLine(point1, point2)
+                x1, x2 = self.new_poses[line.point1].x(), self.new_poses[line.point2].x()
+                x = x1 - (x1 - x2) / 2
+                y1, y2 = self.new_poses[line.point1].y(), self.new_poses[line.point2].y()
+                y = y1 - (y1 - y2) / 2
+                painter.drawEllipse(QPointF(x, y), self.sizes.rad, self.sizes.rad)
+                painter.drawText(x - self.sizes.rad/4, y + self.sizes.rad/4, '%d' % line.length)
+                painter.drawText(x - self.sizes.rad * 3, y - self.sizes.rad * 3, '%d' % line.idx)
         painter.setBrush(QColor(221, 160, 221))
         for idx, point in self.new_poses.items():
             painter.drawRect(point.x() - self.sizes.point, point.y() - self.sizes.point,
-                             2*self.sizes.point, 2*self.sizes.point)
+                                 2*self.sizes.point, 2*self.sizes.point)
+            painter.drawText(point.x() - self.sizes.rad*3, point.y() - self.sizes.rad *3, '%d' % idx)
 
 
 #drawing posts and trains
@@ -74,7 +76,7 @@ class DrawDetails(QGraphicsItem):
 
     def paint(self, painter, option, widget):
         painter.setPen(QColor(0, 0, 0))
-        painter.setFont(QFont('Times', 6))
+        painter.setFont(QFont('Times', 4))
         self.draw_post(painter, option, widget)
         self.draw_train(painter, option, widget)
 
@@ -102,13 +104,14 @@ class DrawDetails(QGraphicsItem):
                                     self.sizes.train*2), train.tostring())
 
 
-class DrawListRating(QGraphicsItem):
-    def __init__(self, players):
-        super(DrawListRating, self).__init__()
+class DrawInfo(QGraphicsItem):
+    def __init__(self, ratings, num_tick):
+        super(DrawInfo, self).__init__()
         self.sizes = Sizes()
         self.rect = QRectF(- self.sizes.x/2 , - self.sizes.y/2,
                             self.sizes.x , self.sizes.y )
-        self.players = players
+        self.ratings = ratings
+        self.tick = num_tick
 
     def boundingRect(self):
         return self.rect
@@ -116,9 +119,11 @@ class DrawListRating(QGraphicsItem):
     def paint(self, painter, option, widget):
         painter.setPen(QColor(50, 40, 160))
         painter.setFont(QFont('Times', 10))
-        label = 'Rating:\n'
-        for idx, player in self.players.items():
-            label = label + '%s:%d\n' % (player.name, player.rating)
+        self.tick += 1
+        label = 'Tick:%d\nRating:\n' % self.tick
+        for idx, rating in self.ratings.items():
+            label = label + '%s:%d\n' % (rating[0], rating[1])
+
         painter.drawText(self.rect, label)
 
 
@@ -152,7 +157,7 @@ class Scenes(QGraphicsView):
         elif layer == 1:
             if self.sceneItems[1] is None:
                 self.add_item(1, DrawDetails(self.game.layers[0], self.game.layers[1]), self.sizes.center)
-                self.add_item(2, DrawListRating(self.game.players), self.sizes.center)
+                self.add_item(2, DrawInfo(self.game.ratings, self.game.num_tick), self.sizes.center)
             self.sceneItems[2].update()
 
         self.sceneItems[layer].update()
