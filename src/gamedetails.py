@@ -10,6 +10,7 @@ COLOR_PLAYER = '#FFFACD'
 COST_LEVEL_TRAIN = [40, 80]
 COST_LEVEL_TOWN = [100, 200]
 
+
 class GameState(Enum):
     INIT = 1
     RUN = 2
@@ -141,7 +142,6 @@ class Player:
 
 class Train:
     def __init__(self, train):
-        print(train)
         self.idx = train['idx']
         self.line = train['line_idx']
         self.next_line = 0
@@ -246,7 +246,6 @@ class Town(Post):
         self.product = town['product']
         self.level = town['level']
         self.events = town['events']
-        print(self.events)
 
 
 class Market(Post):
@@ -330,11 +329,26 @@ class Game:
         self.ratings = dict()
         self.num_tick = 0
         self.level = 1
+        self.game = '620875990'
+        self.count = 2
 
-    def login(self, name='Cache me if you can'):
-        Socket.send(Action.LOGIN, '{"name":"%s"}' % name)
+    def get_state_game(self):
+        Socket.send(Action.GAMES, '')
+        rec = Socket.receive()
+        games = js.loads(rec.data)
+        for game in games['games']:
+            if game['name'] == self.game:
+                return game['state']
+        return 2
+
+    def login(self, name='Cache3 me if you can'):
+        Socket.send(Action.LOGIN, '{"name":"%s", "num_players":%d, "game":%s}' % (name, self.count, self.game))
+        #Socket.send(Action.LOGIN, '{"name":"%s", "num_players":%d}' % (name, self.count))
+        rec = Socket.receive()
+        Socket.send(Action.PLAYER, '')
         rec = Socket.receive()
         player_data = js.loads(rec.data)
+        print(player_data)
         self.player = Player(player_data)
 
     def logout(self):
@@ -352,7 +366,6 @@ class Game:
         self.upgrade()
 
     def next_move_trains_by_type(self, type_train):
-        print(self.num_tick)
         number = 0
         for train_idx in self.player.trains_idx[type_train]:
             train = self.layers[1].trains[train_idx]
@@ -372,6 +385,8 @@ class Game:
                         train.speed = train.last_speed
                         train.next_speed = train.last_speed
                         self.move_train(train.line, train.next_speed, train_idx)
+            else:
+                self.move_train(train.line, 0, train_idx)
 
     def set_type_of_good(self, type_train,  train, point, town, number):
         time = town.product // town.population
@@ -402,7 +417,6 @@ class Game:
                 self.layers[0].lines[train.line].train_idx = 0
             self.move_train(train.line, train.next_speed, train.idx)
         else:
-            # print(train.idx, line, self.layers[0].lines[train.line].train_idx)
             if self.layers[0].lines[train.line].train_idx == train.idx:
                 self.layers[0].lines[train.line].train_idx = 0
             self.layers[0].lines[line].train_idx = train.idx
@@ -433,7 +447,7 @@ class Game:
             for line in list_adj[path.point]:
 
                 train_idx = self.layers[0].lines[line].train_idx
-                if train_idx == 0 or train_idx == train.idx or path.dist != 0:
+                if train_idx == 0 or path.dist != 0:
                     pass
                 elif self.layers[1].trains[train_idx].next_line != line and self.layers[1].trains[train_idx].line != line:
                     self.layers[0].lines[line].train_idx = 0
@@ -475,29 +489,31 @@ class Game:
     def check_occupied_points(self, points_free, type_trains):
         for train_idx in self.player.trains_idx[type_trains]:
             train = self.layers[1].trains[train_idx]
-            line = self.layers[0].lines[train.line]
-            if train.position == line.length and train.next_speed == 0:
-                points_free[line.point2] = self.occupied_point(line.point2)
-            elif train.position == 0 and train.next_speed == 0:
-                points_free[line.point1] = self.occupied_point(line.point1)
+            if train.cooldown == 0:
+                line = self.layers[0].lines[train.line]
+                if train.position == line.length and train.next_speed == 0:
+                    points_free[line.point2] = self.occupied_point(line.point2)
+                elif train.position == 0 and train.next_speed == 0:
+                    points_free[line.point1] = self.occupied_point(line.point1)
         return points_free
 
     def check_collisions(self, points_free, type_trains):
         for train_idx in self.player.trains_idx[type_trains]:
             train = self.layers[1].trains[train_idx]
-            line = self.layers[0].lines[train.line]
-            if train.position + train.next_speed == line.length:
-                if points_free[line.point2]:
-                    points_free[line.point2] = self.occupied_point(line.point2)
-                else:
-                    train.last_speed = train.speed
-                    self.move_train(train.line, 0, train_idx)
-            elif train.position + train.next_speed == 0:
-                if points_free[line.point1]:
-                    points_free[line.point1] = self.occupied_point(line.point1)
-                else:
-                    train.last_speed = train.speed
-                    self.move_train(train.line, 0, train_idx)
+            if train.cooldown == 0:
+                line = self.layers[0].lines[train.line]
+                if train.position + train.next_speed == line.length:
+                    if points_free[line.point2]:
+                        points_free[line.point2] = self.occupied_point(line.point2)
+                    else:
+                        train.last_speed = train.speed
+                        self.move_train(train.line, 0, train_idx)
+                elif train.position + train.next_speed == 0:
+                    if points_free[line.point1]:
+                        points_free[line.point1] = self.occupied_point(line.point1)
+                    else:
+                        train.last_speed = train.speed
+                        self.move_train(train.line, 0, train_idx)
         return points_free
 
     def occupied_point(self, point):
@@ -521,13 +537,15 @@ class Game:
         if len(posts) > 0 or len(trains) > 0:
             Socket.send(Action.UPGRADE, '{"posts":%s,"trains":%s}' % (str(posts), str(trains)))
             rec = Socket.receive()
-            print(rec.result)
         if new_level:
             self.level += 1
 
     def upgrade_trains(self, armor, type_trains, trains, new_level):
         for train_idx in self.player.trains_idx[type_trains]:
-            if self.layers[1].trains[train_idx].level == self.level:
+            train = self.layers[1].trains[train_idx]
+            line = self.layers[0].lines[train.line]
+            if train.level == self.level and ((train.position == 0 and line.point1 == self.player.home) or
+                                              (train.position == line.length and line.point2 == self.player.home)):
                     new_level = False
                     if armor - COST_LEVEL_TRAIN[self.level - 1] >= 40:
                         armor -= COST_LEVEL_TRAIN[self.level - 1]
@@ -537,7 +555,7 @@ class Game:
     def upgrade_posts(self, armor, town, posts, new_level):
         if town.level == self.level:
             new_level = False
-            if armor - COST_LEVEL_TOWN[self.level - 1] > 20:
+            if armor - COST_LEVEL_TOWN[self.level - 1] > 40:
                 armor -= COST_LEVEL_TOWN[self.level - 1]
                 posts.append(town.idx)
         return new_level
@@ -550,29 +568,20 @@ class Game:
     def update_layer(self, layer):
         Socket.send(Action.MAP, '{"layer":%s}' % layer)
         rec = Socket.receive()
-        is_ok = False
-        if rec.result == Result.OKEY.value:
+        if rec.result == Result.OKEY.value :
             data = js.loads(rec.data)
-            is_ok = True
-            if data != '':
-                if layer == 0:
-                    if self.layers[layer] is None:
-                        self.layers[layer] = Layer0(data)
-                    else:
-                        self.layers[layer].update(data)
-                elif layer == 1:
-                    if self.layers[layer] is None:
-                        self.layers[layer] = Layer1(data, self.player.idx)
-                    else:
-                        self.layers[layer].update(data)
-                        self.num_tick += 1
-                    self.update_ratings(data['ratings'])
-                    self.next_move()
-        else:
-            print(rec.result)
-        return is_ok
-
-
+            if layer == 0:
+                if self.layers[layer] is None:
+                    self.layers[layer] = Layer0(data)
+                else:
+                    self.layers[layer].update(data)
+            elif layer == 1:
+                if self.layers[layer] is None:
+                    self.layers[layer] = Layer1(data, self.player.idx)
+                else:
+                    self.layers[layer].update(data)
+                self.update_ratings(data['ratings'])
+        return rec.result
 
     def update_ratings(self, ratings):
         for idx, rating in ratings.items():

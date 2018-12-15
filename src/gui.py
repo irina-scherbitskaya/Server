@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraph
 from gamedetails import *
 
 SLEEP_TIME = 10000
+SLEEP_TIME_TO_START = 100
 
 
 # new poses for drawing
@@ -53,13 +54,15 @@ class DrawGraph(QGraphicsItem):
                 y1, y2 = self.new_poses[line.point1].y(), self.new_poses[line.point2].y()
                 y = y1 - (y1 - y2) / 2
                 painter.drawEllipse(QPointF(x, y), self.sizes.rad, self.sizes.rad)
-                painter.drawText(x - self.sizes.rad/4, y + self.sizes.rad/4, '%d' % line.length)
-                painter.drawText(x - self.sizes.rad * 3, y - self.sizes.rad * 3, '%d' % line.idx)
-        painter.setBrush(QColor(221, 160, 221))
+                painter.drawText(x - self.sizes.rad/4, y + self.sizes.rad/4, '%d' % line.idx)
+                #painter.drawText(x - self.sizes.rad * 3, y - self.sizes.rad * 3, '%d' % line.idx)
+
         for idx, point in self.new_poses.items():
+            painter.setBrush(QColor(221, 160, 221))
             painter.drawRect(point.x() - self.sizes.point, point.y() - self.sizes.point,
                                  2*self.sizes.point, 2*self.sizes.point)
-            painter.drawText(point.x() - self.sizes.rad*3, point.y() - self.sizes.rad *3, '%d' % idx)
+            painter.setBrush(QColor(221, 160, 121))
+            painter.drawText(point.x() - self.sizes.rad, point.y() - self.sizes.rad, '%d' % idx)
 
 
 #drawing posts and trains
@@ -137,6 +140,7 @@ class Scenes(QGraphicsView):
         super(Scenes, self).__init__()
         self.center = None
         self.flag_start_game = False
+        self.flag_init_game = False
         self.flag_end_game = False
         self.sizes = Sizes()
         self.scene = QGraphicsScene(self)
@@ -147,8 +151,8 @@ class Scenes(QGraphicsView):
                           self.sizes.center[1] - self.sizes.y/2,
                           self.sizes.x, self.sizes.y)
         self.timer = QTimer()
-        self.timer.timeout.connect(self.time_update)
-        self.timer.setInterval(SLEEP_TIME)
+        self.timer.timeout.connect(self.time_start_game)
+        self.timer.setInterval(SLEEP_TIME_TO_START)
 
     def add_item(self, idx, item, pos):
         self.sceneItems[idx] = item
@@ -164,34 +168,50 @@ class Scenes(QGraphicsView):
             if self.sceneItems[1] is None:
                 self.add_item(1, DrawDetails(self.game.layers[0], self.game.layers[1]), self.sizes.center)
                 town = self.game.layers[1].posts[self.game.player.home]
-                if town.population == 0:
-                    self.flag_end_game = True
                 self.add_item(2, DrawInfo(self.game.ratings, self.game.num_tick, town), self.sizes.center)
+            if self.sceneItems[2].town.population == 0:
+                self.flag_end_game = True
             self.sceneItems[2].update()
-
         self.sceneItems[layer].update()
         self.update()
 
     def tick(self):
         self.timer.stop()
         if self.flag_start_game and not self.flag_end_game:
-            if self.game.tick():
-                self.update_layer(1)
-            self.timer.start()
+            if self.game.tick() == Result.OKEY.value:
+                self.next_step()
+        self.timer.start()
 
-    def start_game(self):
-        if not self.flag_start_game and not self.flag_end_game:
+    def init_game(self):
+        if not self.flag_init_game and not self.flag_end_game:
             self.game.login()
             self.game.start_game()
-            self.timer.start()
             self.update_layer(0)
             self.update_layer(1)
-        self.flag_start_game = True
+            self.timer.start()
+        self.flag_init_game = True
 
     def time_update(self):
-        if self.game.update_layer(1) and not self.flag_end_game:
-            self.update_layer(1)
+        res = self.game.update_layer(1)
+        if res == Result.OKEY.value and not self.flag_end_game:
+            self.next_step()
         self.timer.start()
+
+    def time_start_game(self):
+        res = self.game.get_state_game()
+        if res == GameState.RUN.value and not self.flag_end_game:
+            self.next_step()
+            self.timer = QTimer()
+            self.timer.timeout.connect(self.time_update)
+            self.timer.setInterval(SLEEP_TIME)
+            self.flag_start_game = True
+            self.timer.start()
+        elif res == GameState.INIT.value:
+            self.timer.start()
+
+    def next_step(self):
+        self.game.update_layer(1)
+        self.game.next_move()
 
 
 class Application(QMainWindow):
@@ -221,7 +241,7 @@ class Application(QMainWindow):
         tick_button = QPushButton('Tick')
         tick_button.clicked.connect(self.scenes.tick)
         start_button = QPushButton('Start game')
-        start_button.clicked.connect(self.scenes.start_game)
+        start_button.clicked.connect(self.scenes.init_game)
 
         hbox.addWidget(tick_button)
         hbox.addWidget(start_button)

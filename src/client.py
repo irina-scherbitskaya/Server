@@ -13,6 +13,7 @@ class Action(Enum):
     UPGRADE = 4
     TURN = 5
     PLAYER = 6
+    GAMES = 7
     MAP = 10
 
 
@@ -78,15 +79,17 @@ class Socket:
     @staticmethod
     def receive():
         result = Socket.sock.recv(SIZE_MSG)
-        len_msg = b''
         msg = b''
-        if int.from_bytes(result, LITTLE) == 0:
-            len_msg = Socket.sock.recv(SIZE_MSG)
-            count = int.from_bytes(len_msg, LITTLE)
-            while count > 0:
-                msg += Socket.sock.recv(min(SIZE_MSG, count))
-                count -= SIZE_MSG
-        return ResponseMessage(result+len_msg+msg)
+        len_msg = Socket.sock.recv(SIZE_MSG)
+        count = int.from_bytes(len_msg, LITTLE)
+        while count > 0:
+            msg += Socket.sock.recv(min(SIZE_MSG, count))
+            count -= SIZE_MSG
+        msg = ResponseMessage(result+len_msg+msg)
+        print(msg.result)
+        if msg.result != 0:
+            print( msg.data)
+        return msg
 
     @staticmethod
     def close():
