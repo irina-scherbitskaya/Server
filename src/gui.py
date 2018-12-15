@@ -105,13 +105,14 @@ class DrawDetails(QGraphicsItem):
 
 
 class DrawInfo(QGraphicsItem):
-    def __init__(self, ratings, num_tick):
+    def __init__(self, ratings, num_tick, town):
         super(DrawInfo, self).__init__()
         self.sizes = Sizes()
-        self.rect = QRectF(- self.sizes.x/2 , - self.sizes.y/2,
-                            self.sizes.x , self.sizes.y )
+        self.rect = QRectF(- self.sizes.x/2, - self.sizes.y/2,
+                            self.sizes.x, self.sizes.y)
         self.ratings = ratings
         self.tick = num_tick
+        self.town = town
 
     def boundingRect(self):
         return self.rect
@@ -123,8 +124,12 @@ class DrawInfo(QGraphicsItem):
         label = 'Tick:%d\nRating:\n' % self.tick
         for idx, rating in self.ratings.items():
             label = label + '%s:%d\n' % (rating[0], rating[1])
-
+        label += '%s :%s\n' % (self.town.name, self.town.tostring())
         painter.drawText(self.rect, label)
+        if self.town.population == 0:
+            painter.setPen(QColor(192, 57, 43))
+            painter.setFont(QFont('Times', 100))
+            painter.drawText(self.rect, Qt.AlignHCenter | Qt.AlignVCenter,'GAME OVER')
 
 
 class Scenes(QGraphicsView):
@@ -132,6 +137,7 @@ class Scenes(QGraphicsView):
         super(Scenes, self).__init__()
         self.center = None
         self.flag_start_game = False
+        self.flag_end_game = False
         self.sizes = Sizes()
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
@@ -157,21 +163,24 @@ class Scenes(QGraphicsView):
         elif layer == 1:
             if self.sceneItems[1] is None:
                 self.add_item(1, DrawDetails(self.game.layers[0], self.game.layers[1]), self.sizes.center)
-                self.add_item(2, DrawInfo(self.game.ratings, self.game.num_tick), self.sizes.center)
+                town = self.game.layers[1].posts[self.game.player.home]
+                if town.population == 0:
+                    self.flag_end_game = True
+                self.add_item(2, DrawInfo(self.game.ratings, self.game.num_tick, town), self.sizes.center)
             self.sceneItems[2].update()
 
         self.sceneItems[layer].update()
         self.update()
 
     def tick(self):
-        if self.flag_start_game:
-            self.timer.stop()
-            self.game.tick()
+        self.timer.stop()
+        if self.flag_start_game and not self.flag_end_game:
+            if self.game.tick():
+                self.update_layer(1)
             self.timer.start()
-            self.update_layer(1)
 
     def start_game(self):
-        if not self.flag_start_game:
+        if not self.flag_start_game and not self.flag_end_game:
             self.game.login()
             self.game.start_game()
             self.timer.start()
@@ -180,9 +189,8 @@ class Scenes(QGraphicsView):
         self.flag_start_game = True
 
     def time_update(self):
-        self.game.update_layer(1)
-        self.game.next_move()
-        self.update_layer(1)
+        if self.game.update_layer(1) and not self.flag_end_game:
+            self.update_layer(1)
         self.timer.start()
 
 
