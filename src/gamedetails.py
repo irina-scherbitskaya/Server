@@ -9,7 +9,7 @@ COLOR_OTHER = '#C0C0C0'
 COLOR_PLAYER = '#FFFACD'
 COST_LEVEL_TRAIN = [40, 80]
 COST_LEVEL_TOWN = [100, 200]
-
+MAX_INT = 2**32
 
 class GameState(Enum):
     INIT = 1
@@ -110,7 +110,10 @@ class Layer1:
 
     def update(self, data):
         for train in data['trains']:
-            self.trains[train['idx']].update(train)
+            if self.trains.get(train['idx']) is not None:
+                self.trains[train['idx']].update(train)
+            else:
+                self.trains[train['idx']] = Train(train)
         for post in data['posts']:
             self.posts[post['point_idx']].update(post)
 
@@ -144,6 +147,7 @@ class Train:
     def __init__(self, train):
         self.idx = train['idx']
         self.line = train['line_idx']
+        self.stop_time = 0
         self.next_line = 0
         self.next_speed = 0
         self.last_speed = 0
@@ -329,8 +333,8 @@ class Game:
         self.ratings = dict()
         self.num_tick = 0
         self.level = 1
-        self.game = '620875990'
-        self.count = 2
+        self.game = '6208753849946093'
+        self.count = 1
 
     def get_state_game(self):
         Socket.send(Action.GAMES, '')
@@ -338,17 +342,17 @@ class Game:
         games = js.loads(rec.data)
         for game in games['games']:
             if game['name'] == self.game:
+                print(game['state'])
                 return game['state']
         return 2
 
-    def login(self, name='Cache3 me if you can'):
-        Socket.send(Action.LOGIN, '{"name":"%s", "num_players":%d, "game":%s}' % (name, self.count, self.game))
-        #Socket.send(Action.LOGIN, '{"name":"%s", "num_players":%d}' % (name, self.count))
+    def login(self, name='Cache1 me if you can'):
+        #Socket.send(Action.LOGIN, '{"name":"%s", "num_players":%d, "game":%s}' % (name, self.count, self.game))
+        Socket.send(Action.LOGIN, '{"name":"%s", "num_players":%d}' % (name, self.count))
         rec = Socket.receive()
         Socket.send(Action.PLAYER, '')
         rec = Socket.receive()
         player_data = js.loads(rec.data)
-        print(player_data)
         self.player = Player(player_data)
 
     def logout(self):
@@ -363,6 +367,7 @@ class Game:
         self.next_move_trains_by_type(0)
         self.next_move_trains_by_type(1)
         self.check_crash()
+        self.check_deadlock()
         self.upgrade()
 
     def next_move_trains_by_type(self, type_train):
@@ -375,9 +380,11 @@ class Game:
                 line = self.layers[0].lines[train.line]
                 point = None
                 if train.position == line.length:
+                    train.stop_time = 0
                     point = line.point2
-                    self.set_type_of_good(type_train, train, point , town, number)
+                    self.set_type_of_good(type_train, train, point, town, number)
                 elif train.position == 0:
+                    train.stop_time = 0
                     point = line.point1
                     self.set_type_of_good(type_train, train, point, town, number)
                 else:
@@ -392,25 +399,17 @@ class Game:
         time = town.product // town.population
         time += town.population
         if type_train == 0:
-            self.set_next_pos(train, point, time * number, PostType.MARKET.value, town)
+            self.set_next_pos(train, point, min(town.armor * 5, time * number), PostType.MARKET.value, town)
         else:
             self.set_next_pos(train, point, min(town.armor * 5, time * number), PostType.STORAGE.value, town)
 
     def set_next_pos(self, train, point, time, post_type, town):
-        paths = self.get_paths(point, town.point, post_type, train, time)
+        paths = self.get_paths(point, town.point, post_type, train, time, False)
+        paths = sorted([(goods, line, dist) for dist, line, goods in paths if dist <= time], key=lambda x: -x[0])
         line = None
         goods = 0
         if len(paths) > 0:
-            paths_save = sorted([(goods, line) for dist, line, goods in paths if dist <= time],
-                                          key=lambda x: -x[0])
-            if len(paths_save) > 0:
-                line = paths_save[0][1]
-                goods = paths_save[0][0]
-            else:
-                paths_half_save = sorted([(goods, line) for dist, line, goods in paths if dist > time],
-                                          key=lambda x: -x[0])
-                line = paths_half_save[0][1]
-                goods = paths_half_save[0][0]
+            line, goods = self.get_next_line_and_goods(paths)
         if line is None or (goods == 0 and point == town):
             train.next_speed = 0
             if self.layers[0].lines[train.line].train_idx == train.idx:
@@ -424,9 +423,26 @@ class Game:
             train.next_speed = self.layers[0].get_route(point, line)
             self.move_train(line, train.next_speed, train.idx)
 
-    def get_paths(self, point, town_idx, post_type, train, max_time):
+    def get_next_line_and_goods(self, paths):
+        line = None
+        dist = paths[0][2]
+        line = paths[0][1]
+        goods = paths[0][0]
+        for path in paths:
+            if path[0] == goods:
+                if path[2] < dist:
+                    dist, line, goods = paths[2], paths[1], paths[0]
+            else:
+                break
+        return line, goods
+
+    def get_paths(self, point, town_idx, post_type, train, max_time, to_home):
         heap = []
-        heappush(heap, Path(0, train.goods, point))
+        if not to_home:
+            heappush(heap, Path(0, train.goods, point))
+        else:
+            heappush(heap, Path(0, train.goods_capacity, point))
+            max_time = MAX_INT
         out = list()
         list_adj = self.layers[0].list_adjacency
         max_point_goods = [-1]*len(self.layers[0].lines)
@@ -504,14 +520,18 @@ class Game:
                 line = self.layers[0].lines[train.line]
                 if train.position + train.next_speed == line.length:
                     if points_free[line.point2]:
+                        train.stop_time = 0
                         points_free[line.point2] = self.occupied_point(line.point2)
                     else:
                         train.last_speed = train.speed
+                        train.stop_time += 1
                         self.move_train(train.line, 0, train_idx)
                 elif train.position + train.next_speed == 0:
                     if points_free[line.point1]:
+                        train.stop_time = 0
                         points_free[line.point1] = self.occupied_point(line.point1)
                     else:
+                        train.stop_time += 1
                         train.last_speed = train.speed
                         self.move_train(train.line, 0, train_idx)
         return points_free
@@ -560,8 +580,16 @@ class Game:
                 posts.append(town.idx)
         return new_level
 
+    def check_deadlock(self):
+        for type_train in [0, 1]:
+            for train_idx in self.player.trains_idx[type_train]:
+                train = self.layers[1].trains[train_idx]
+                if train.stop_time > 2:
+                    self.move_train(train.line, train.last_speed, train_idx)
+                    return
+
     def move_train(self, line, speed, idx):
-        #print('{"line_idx":%s,"speed":%s,"train_idx":%s}' % (line, speed, idx))
+        print('{"line_idx":%s,"speed":%s,"train_idx":%s}' % (line, speed, idx))
         Socket.send(Action.MOVE, '{"line_idx":%s,"speed":%s,"train_idx":%s}' % (line, speed, idx))
         rec = Socket.receive()
 
@@ -581,6 +609,7 @@ class Game:
                 else:
                     self.layers[layer].update(data)
                 self.update_ratings(data['ratings'])
+            print(data)
         return rec.result
 
     def update_ratings(self, ratings):

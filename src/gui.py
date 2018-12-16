@@ -123,7 +123,6 @@ class DrawInfo(QGraphicsItem):
     def paint(self, painter, option, widget):
         painter.setPen(QColor(50, 40, 160))
         painter.setFont(QFont('Times', 10))
-        self.tick += 1
         label = 'Tick:%d\nRating:\n' % self.tick
         for idx, rating in self.ratings.items():
             label = label + '%s:%d\n' % (rating[0], rating[1])
@@ -172,6 +171,7 @@ class Scenes(QGraphicsView):
             if self.sceneItems[2].town.population == 0:
                 self.flag_end_game = True
             self.sceneItems[2].update()
+            self.sceneItems[2].tick = self.game.num_tick
         self.sceneItems[layer].update()
         self.update()
 
@@ -200,18 +200,19 @@ class Scenes(QGraphicsView):
     def time_start_game(self):
         res = self.game.get_state_game()
         if res == GameState.RUN.value and not self.flag_end_game:
-            self.next_step()
-            self.timer = QTimer()
-            self.timer.timeout.connect(self.time_update)
-            self.timer.setInterval(SLEEP_TIME)
-            self.flag_start_game = True
-            self.timer.start()
+            if self.game.update_layer(1) == Result.OKEY.value:
+                self.next_step()
+                self.timer = QTimer()
+                self.timer.timeout.connect(self.time_update)
+                self.timer.setInterval(SLEEP_TIME)
+                self.flag_start_game = True
+                self.timer.start()
         elif res == GameState.INIT.value:
             self.timer.start()
 
     def next_step(self):
-        self.game.update_layer(1)
         self.game.next_move()
+        self.update_layer(1)
 
 
 class Application(QMainWindow):
