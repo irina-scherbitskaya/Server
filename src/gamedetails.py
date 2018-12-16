@@ -162,7 +162,7 @@ class Train:
         self.color = COLOR_OTHER
 
     def tostring(self):
-        return 'speed: %d \ngoods: %d\ncapacity: %d' % (self.speed, self.goods, self.goods_capacity)
+        return str(self.goods)
 
     def update(self, train):
         self.line = train['line_idx']

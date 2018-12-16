@@ -1,9 +1,10 @@
 from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt, QTimer
-from PyQt5.QtGui import QBrush, QColor, QPainter, QRadialGradient, QPen, QFont
+from PyQt5.QtGui import QBrush, QColor, QPainter, QRadialGradient, QPen, QFont, QPixmap
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QWidget,
                              QLabel, QLineEdit, QPushButton, QStyle, QMainWindow)
 from gamedetails import *
+import os
 
 SLEEP_TIME = 10000
 SLEEP_TIME_TO_START = 100
@@ -102,8 +103,10 @@ class DrawDetails(QGraphicsItem):
             x = x1 - train.position * (x1 - x2) / line.length
             y1, y2 = self.new_poses[line.point1].y(), self.new_poses[line.point2].y()
             y = y1 - train.position*(y1-y2)/line.length
-            painter.drawRect(x - self.sizes.train, y - self.sizes.train, self.sizes.train*2, self.sizes.train*2)
-            painter.drawText(QRectF(x - self.sizes.train + 2, y - self.sizes.train + 2, self.sizes.train*2,
+            imgPath=os.getcwd()+'\\src\\train.png'
+            pixmap = QPixmap(imgPath)
+            painter.drawPixmap(x - self.sizes.train, y - self.sizes.train, self.sizes.train*3, self.sizes.train*2,pixmap)
+            painter.drawText(QRectF(x, y, self.sizes.train*2,
                                     self.sizes.train*2), train.tostring())
 
 
