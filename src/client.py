@@ -82,8 +82,6 @@ class Socket:
             msg += Socket.sock.recv(min(SIZE_MSG, count))
             count -= SIZE_MSG
         msg = ResponseMessage(result+len_msg+msg)
-        if msg.result != 0:
-            print(msg.result, msg.data)
         return msg
 
     @staticmethod

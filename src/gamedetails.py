@@ -342,7 +342,6 @@ class Game:
         games = js.loads(rec.data)
         for game in games['games']:
             if game['name'] == self.game:
-                print(game['state'])
                 return game['state']
         return 2
 
@@ -589,7 +588,6 @@ class Game:
                     return
 
     def move_train(self, line, speed, idx):
-        print('{"line_idx":%s,"speed":%s,"train_idx":%s}' % (line, speed, idx))
         Socket.send(Action.MOVE, '{"line_idx":%s,"speed":%s,"train_idx":%s}' % (line, speed, idx))
         rec = Socket.receive()
 
@@ -609,7 +607,6 @@ class Game:
                 else:
                     self.layers[layer].update(data)
                 self.update_ratings(data['ratings'])
-            print(data)
         return rec.result
 
     def update_ratings(self, ratings):

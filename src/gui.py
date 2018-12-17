@@ -7,7 +7,7 @@ import os
 
 SLEEP_TIME = 10000
 SLEEP_TIME_TO_START = 100
-IMG_TRAINS = ['../resource/train.png', '../resource/train1.png', '../resource/train2.png', '../resource/train3.png']
+IMG_TRAINS = ['resource/train.png', 'resource/train1.png', 'resource/train2.png', 'resource/train3.png']
 
 # new poses for drawing
 def ret_new_poses(pos_points):
