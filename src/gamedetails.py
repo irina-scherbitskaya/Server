@@ -496,14 +496,12 @@ class Game:
 
     def check_crash(self):
         points_free = [True]*(len(self.layers[0].points))
-        points_free = self.check_occupied_points(points_free, 0)
-        points_free = self.check_occupied_points(points_free, 1)
+        points_free = self.check_occupied_points(points_free)
         points_free = self.check_collisions(points_free, 0)
         points_free = self.check_collisions(points_free, 1)
 
-    def check_occupied_points(self, points_free, type_trains):
-        for train_idx in self.player.trains_idx[type_trains]:
-            train = self.layers[1].trains[train_idx]
+    def check_occupied_points(self, points_free):
+        for train_idx, train in self.layers[1].trains.items():
             if train.cooldown == 0:
                 line = self.layers[0].lines[train.line]
                 if train.position == line.length and train.next_speed == 0:
