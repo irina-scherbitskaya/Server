@@ -94,18 +94,19 @@ class Layer1:
         self.trains = dict()
         self.posts = dict()
         self.train_goods = list()
-        self.parse_layer(json, player_idx)
+        self.player = player_idx
+        self.parse_layer(json)
 
-    def parse_layer(self, data, player_idx):
+    def parse_layer(self, data):
         for train in data['trains']:
             self.trains[train['idx']] = Train(train)
-            if train['player_idx'] == player_idx:
+            if train['player_idx'] == self.player:
                 self.trains[train['idx']].color = COLOR_PLAYER
         self.train_goods = [0]*(len(self.trains))
         for post in data['posts']:
             self.posts[post['point_idx']] = CreatorPost.CreatePost(post)
             if post['type'] == PostType.TOWN.value:
-                if post['player_idx'] == player_idx:
+                if post['player_idx'] == self.player:
                     self.posts[post['point_idx']].color = COLOR_PLAYER
 
     def update(self, data):
@@ -159,7 +160,6 @@ class Train:
         self.goods_type = train['goods_type']
         self.player_idx = train['player_idx']
         self.cooldown = train['cooldown']
-        self.color = COLOR_OTHER
 
     def tostring(self):
         return str(self.goods)

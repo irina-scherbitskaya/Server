@@ -5,7 +5,6 @@ LITTLE = 'little'
 SIZE_MSG = 4
 
 
-# enumeration of actions for a request to server
 class Action(Enum):
     LOGIN = 1
     LOGOUT = 2
@@ -17,7 +16,6 @@ class Action(Enum):
     MAP = 10
 
 
-# enumeration of results of server
 class Result(Enum):
     OKEY = 0
     BAD_COMMAND = 1
@@ -28,7 +26,6 @@ class Result(Enum):
     INTERNAL_SERVER_ERROR = 500
 
 
-# class processes the message to send to server
 class ActionMessage:
 
     def __init__(self, action, data_length, data):
@@ -43,7 +40,6 @@ class ActionMessage:
         return bytes_action + bytes_length + bytes(self.data, encoding='utf-8')
 
 
-# class processes a response message from server
 class ResponseMessage:
 
     def __init__(self, bytes_msg):
@@ -93,4 +89,6 @@ class Socket:
     @staticmethod
     def close():
         Socket.sock.close()
+
+
 

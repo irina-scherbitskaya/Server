@@ -1,14 +1,13 @@
 from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt, QTimer
-from PyQt5.QtGui import QBrush, QColor, QPainter, QRadialGradient, QPen, QFont, QPixmap
-from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,
-                             QGridLayout, QVBoxLayout, QHBoxLayout, QWidget,
-                             QLabel, QLineEdit, QPushButton, QStyle, QMainWindow)
+from PyQt5.QtGui import QBrush, QColor, QPainter, QPen, QFont, QPixmap
+from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QVBoxLayout, QHBoxLayout,
+                             QWidget, QLabel,  QPushButton, QMainWindow)
 from gamedetails import *
 import os
 
 SLEEP_TIME = 10000
 SLEEP_TIME_TO_START = 100
-
+IMG_TRAINS = ['../resource/train.png', '../resource/train1.png', '../resource/train2.png', '../resource/train3.png']
 
 # new poses for drawing
 def ret_new_poses(pos_points):
@@ -26,8 +25,8 @@ class Sizes:
         self.center = (self.x*5/8, self.y*5/8)
         self.indent = self.y/15
         self.point = self.y/50
-        self.train = self.y/60
-        self.rad = self.y/100
+        self.train = self.y/25
+        self.rad = self.y/160
 
 
 #drawing graphs
@@ -55,7 +54,7 @@ class DrawGraph(QGraphicsItem):
                 y1, y2 = self.new_poses[line.point1].y(), self.new_poses[line.point2].y()
                 y = y1 - (y1 - y2) / 2
                 painter.drawEllipse(QPointF(x, y), self.sizes.rad, self.sizes.rad)
-                painter.drawText(x - self.sizes.rad/4, y + self.sizes.rad/4, '%d' % line.idx)
+                painter.drawText(x - self.sizes.rad/3, y + self.sizes.rad/3, '%d' % line.length)
                 #painter.drawText(x - self.sizes.rad * 3, y - self.sizes.rad * 3, '%d' % line.idx)
 
         for idx, point in self.new_poses.items():
@@ -63,7 +62,7 @@ class DrawGraph(QGraphicsItem):
             painter.drawRect(point.x() - self.sizes.point, point.y() - self.sizes.point,
                                  2*self.sizes.point, 2*self.sizes.point)
             painter.setBrush(QColor(221, 160, 121))
-            painter.drawText(point.x() - self.sizes.rad, point.y() - self.sizes.rad, '%d' % idx)
+            #painter.drawText(point.x() - self.sizes.rad, point.y() - self.sizes.rad, '%d' % idx)
 
 
 #drawing posts and trains
@@ -103,11 +102,12 @@ class DrawDetails(QGraphicsItem):
             x = x1 - train.position * (x1 - x2) / line.length
             y1, y2 = self.new_poses[line.point1].y(), self.new_poses[line.point2].y()
             y = y1 - train.position*(y1-y2)/line.length
-            imgPath=os.getcwd()+'\\src\\train.png'
-            pixmap = QPixmap(imgPath)
-            painter.drawPixmap(x - self.sizes.train, y - self.sizes.train, self.sizes.train*3, self.sizes.train*2,pixmap)
-            painter.drawText(QRectF(x, y, self.sizes.train*2,
-                                    self.sizes.train*2), train.tostring())
+            img_train = IMG_TRAINS[0]
+            if train.player_idx == self.layer1.player:
+                img_train = IMG_TRAINS[train.level]
+            pixmap = QPixmap(img_train)
+            painter.drawPixmap(x - self.sizes.train / 2, y - self.sizes.train / 2, self.sizes.train, self.sizes.train, pixmap)
+            painter.drawText(QRectF(x, y, self.sizes.train,self.sizes.train), train.tostring())
 
 
 class DrawInfo(QGraphicsItem):
@@ -125,7 +125,7 @@ class DrawInfo(QGraphicsItem):
 
     def paint(self, painter, option, widget):
         painter.setPen(QColor(50, 40, 160))
-        painter.setFont(QFont('Times', 10))
+        painter.setFont(QFont('Times', 15))
         label = 'Tick:%d\nRating:\n' % self.tick
         for idx, rating in self.ratings.items():
             label = label + '%s:%d\n' % (rating[0], rating[1])
@@ -174,7 +174,7 @@ class Scenes(QGraphicsView):
             if self.sceneItems[2].town.population == 0:
                 self.flag_end_game = True
             self.sceneItems[2].update()
-            self.sceneItems[2].tick = self.game.num_tick
+            self.sceneItems[2].tick += 1
         self.sceneItems[layer].update()
         self.update()
 
