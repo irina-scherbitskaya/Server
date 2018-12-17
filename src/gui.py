@@ -111,13 +111,13 @@ class DrawDetails(QGraphicsItem):
 
 
 class DrawInfo(QGraphicsItem):
-    def __init__(self, ratings, num_tick, town):
+    def __init__(self, ratings, town):
         super(DrawInfo, self).__init__()
         self.sizes = Sizes()
         self.rect = QRectF(- self.sizes.x/2, - self.sizes.y/2,
                             self.sizes.x, self.sizes.y)
         self.ratings = ratings
-        self.tick = num_tick
+        self.tick = 0
         self.town = town
 
     def boundingRect(self):
@@ -170,7 +170,7 @@ class Scenes(QGraphicsView):
             if self.sceneItems[1] is None:
                 self.add_item(1, DrawDetails(self.game.layers[0], self.game.layers[1]), self.sizes.center)
                 town = self.game.layers[1].posts[self.game.player.home]
-                self.add_item(2, DrawInfo(self.game.ratings, self.game.num_tick, town), self.sizes.center)
+                self.add_item(2, DrawInfo(self.game.ratings, town), self.sizes.center)
             if self.sceneItems[2].town.population == 0:
                 self.flag_end_game = True
             self.sceneItems[2].update()
