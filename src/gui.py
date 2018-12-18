@@ -96,7 +96,6 @@ class DrawDetails(QGraphicsItem):
 
     def draw_train(self, painter, option, widget):
         for idx, train in self.layer1.trains.items():
-            painter.setBrush(QColor(train.color))
             line = self.layer0.lines[train.line]
             x1, x2 = self.new_poses[line.point1].x(), self.new_poses[line.point2].x()
             x = x1 - train.position * (x1 - x2) / line.length
